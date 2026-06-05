@@ -1,11 +1,32 @@
 export type PropertyCategory = "street" | "railroad" | "utility";
 
-export type Property = {
+type BaseProperty = {
   id: string;
   name: string;
   category: PropertyCategory;
-  colorGroup?: string;
+  retailValue: number;
+  mortgage: number;
 };
+
+export type StreetProperty = BaseProperty & {
+  category: "street";
+  colorGroup: string;
+  rent: [number, number, number, number, number, number];
+  houseCost: number;
+  hotelCost: number;
+};
+
+export type RailroadProperty = BaseProperty & {
+  category: "railroad";
+  rentDescription: string;
+};
+
+export type UtilityProperty = BaseProperty & {
+  category: "utility";
+  rentDescription: string;
+};
+
+export type Property = StreetProperty | RailroadProperty | UtilityProperty;
 
 export type Player = {
   id: string;
@@ -53,37 +74,42 @@ export type SilentAuctionResult = {
 };
 
 export const STARTING_CASH = 1500;
+export const QUICK_BID_INCREMENTS = [10, 20, 50, 100] as const;
 
 export const MONOPOLY_PROPERTIES: Property[] = [
-  { id: "mediterranean-avenue", name: "Mediterranean Avenue", category: "street", colorGroup: "Brown" },
-  { id: "baltic-avenue", name: "Baltic Avenue", category: "street", colorGroup: "Brown" },
-  { id: "oriental-avenue", name: "Oriental Avenue", category: "street", colorGroup: "Light Blue" },
-  { id: "vermont-avenue", name: "Vermont Avenue", category: "street", colorGroup: "Light Blue" },
-  { id: "connecticut-avenue", name: "Connecticut Avenue", category: "street", colorGroup: "Light Blue" },
-  { id: "st-charles-place", name: "St. Charles Place", category: "street", colorGroup: "Pink" },
-  { id: "states-avenue", name: "States Avenue", category: "street", colorGroup: "Pink" },
-  { id: "virginia-avenue", name: "Virginia Avenue", category: "street", colorGroup: "Pink" },
-  { id: "st-james-place", name: "St. James Place", category: "street", colorGroup: "Orange" },
-  { id: "tennessee-avenue", name: "Tennessee Avenue", category: "street", colorGroup: "Orange" },
-  { id: "new-york-avenue", name: "New York Avenue", category: "street", colorGroup: "Orange" },
-  { id: "kentucky-avenue", name: "Kentucky Avenue", category: "street", colorGroup: "Red" },
-  { id: "indiana-avenue", name: "Indiana Avenue", category: "street", colorGroup: "Red" },
-  { id: "illinois-avenue", name: "Illinois Avenue", category: "street", colorGroup: "Red" },
-  { id: "atlantic-avenue", name: "Atlantic Avenue", category: "street", colorGroup: "Yellow" },
-  { id: "ventnor-avenue", name: "Ventnor Avenue", category: "street", colorGroup: "Yellow" },
-  { id: "marvin-gardens", name: "Marvin Gardens", category: "street", colorGroup: "Yellow" },
-  { id: "pacific-avenue", name: "Pacific Avenue", category: "street", colorGroup: "Green" },
-  { id: "north-carolina-avenue", name: "North Carolina Avenue", category: "street", colorGroup: "Green" },
-  { id: "pennsylvania-avenue", name: "Pennsylvania Avenue", category: "street", colorGroup: "Green" },
-  { id: "park-place", name: "Park Place", category: "street", colorGroup: "Dark Blue" },
-  { id: "boardwalk", name: "Boardwalk", category: "street", colorGroup: "Dark Blue" },
-  { id: "reading-railroad", name: "Reading Railroad", category: "railroad" },
-  { id: "pennsylvania-railroad", name: "Pennsylvania Railroad", category: "railroad" },
-  { id: "b-and-o-railroad", name: "B. & O. Railroad", category: "railroad" },
-  { id: "short-line", name: "Short Line", category: "railroad" },
-  { id: "electric-company", name: "Electric Company", category: "utility" },
-  { id: "water-works", name: "Water Works", category: "utility" }
+  street("mediterranean-avenue", "Mediterranean Avenue", "Brown", 60, 30, [2, 10, 30, 90, 160, 250], 50),
+  street("baltic-avenue", "Baltic Avenue", "Brown", 60, 30, [4, 20, 60, 180, 320, 450], 50),
+  street("oriental-avenue", "Oriental Avenue", "Light Blue", 100, 50, [6, 30, 90, 270, 400, 550], 50),
+  street("vermont-avenue", "Vermont Avenue", "Light Blue", 100, 50, [6, 30, 90, 270, 400, 550], 50),
+  street("connecticut-avenue", "Connecticut Avenue", "Light Blue", 120, 60, [8, 40, 100, 300, 450, 600], 50),
+  street("st-charles-place", "St. Charles Place", "Pink", 140, 70, [10, 50, 150, 450, 625, 750], 100),
+  street("states-avenue", "States Avenue", "Pink", 140, 70, [10, 50, 150, 450, 625, 750], 100),
+  street("virginia-avenue", "Virginia Avenue", "Pink", 160, 80, [12, 60, 180, 500, 700, 900], 100),
+  street("st-james-place", "St. James Place", "Orange", 180, 90, [14, 70, 200, 550, 750, 950], 100),
+  street("tennessee-avenue", "Tennessee Avenue", "Orange", 180, 90, [14, 70, 200, 550, 750, 950], 100),
+  street("new-york-avenue", "New York Avenue", "Orange", 200, 100, [16, 80, 220, 600, 800, 1000], 100),
+  street("kentucky-avenue", "Kentucky Avenue", "Red", 220, 110, [18, 90, 250, 700, 875, 1050], 150),
+  street("indiana-avenue", "Indiana Avenue", "Red", 220, 110, [18, 90, 250, 700, 875, 1050], 150),
+  street("illinois-avenue", "Illinois Avenue", "Red", 240, 120, [20, 100, 300, 750, 925, 1100], 150),
+  street("atlantic-avenue", "Atlantic Avenue", "Yellow", 260, 130, [22, 110, 330, 800, 975, 1150], 150),
+  street("ventnor-avenue", "Ventnor Avenue", "Yellow", 260, 130, [22, 110, 330, 800, 975, 1150], 150),
+  street("marvin-gardens", "Marvin Gardens", "Yellow", 280, 140, [24, 120, 360, 850, 1025, 1200], 150),
+  street("pacific-avenue", "Pacific Avenue", "Green", 300, 150, [26, 130, 390, 900, 1100, 1275], 200),
+  street("north-carolina-avenue", "North Carolina Avenue", "Green", 300, 150, [26, 130, 390, 900, 1100, 1275], 200),
+  street("pennsylvania-avenue", "Pennsylvania Avenue", "Green", 320, 160, [28, 150, 450, 1000, 1200, 1400], 200),
+  street("park-place", "Park Place", "Dark Blue", 350, 175, [35, 175, 500, 1100, 1300, 1500], 200),
+  street("boardwalk", "Boardwalk", "Dark Blue", 400, 200, [50, 200, 600, 1400, 1700, 2000], 200),
+  railroad("reading-railroad", "Reading Railroad"),
+  railroad("pennsylvania-railroad", "Pennsylvania Railroad"),
+  railroad("b-and-o-railroad", "B. & O. Railroad"),
+  railroad("short-line", "Short Line"),
+  utility("electric-company", "Electric Company"),
+  utility("water-works", "Water Works")
 ];
+
+export function calculateOpeningBid(property: Property): number {
+  return Math.ceil((property.retailValue * 0.25) / 10) * 10;
+}
 
 export function createPlayers(names: string[], startingCash = STARTING_CASH): Player[] {
   return names
@@ -149,13 +175,14 @@ export function revealNextProperty(deck: PropertyDeck): {
   };
 }
 
-export function createAscendingAuction(players: Player[], increment: number): AscendingAuction {
+export function createAscendingAuction(players: Player[], increment: number, openingBid = 0): AscendingAuction {
   validateIncrement(increment);
+  validateBidAmount(openingBid, STARTING_CASH, increment);
 
   return {
     increment,
     activeBidderIds: players.map((player) => player.id),
-    currentBid: 0,
+    currentBid: openingBid,
     currentBidderId: null,
     status: "open",
     result: null
@@ -347,4 +374,48 @@ function assertAuctionOpen(auction: AscendingAuction): void {
   if (auction.status !== "open") {
     throw new Error("Auction is already resolved.");
   }
+}
+
+function street(
+  id: string,
+  name: string,
+  colorGroup: string,
+  retailValue: number,
+  mortgage: number,
+  rent: StreetProperty["rent"],
+  houseCost: number
+): StreetProperty {
+  return {
+    id,
+    name,
+    category: "street",
+    colorGroup,
+    retailValue,
+    mortgage,
+    rent,
+    houseCost,
+    hotelCost: houseCost
+  };
+}
+
+function railroad(id: string, name: string): RailroadProperty {
+  return {
+    id,
+    name,
+    category: "railroad",
+    retailValue: 200,
+    mortgage: 100,
+    rentDescription: "Rent $25, $50, $100, or $200 depending on railroads owned"
+  };
+}
+
+function utility(id: string, name: string): UtilityProperty {
+  return {
+    id,
+    name,
+    category: "utility",
+    retailValue: 150,
+    mortgage: 75,
+    rentDescription: "Rent 4x dice roll if one utility is owned; 10x if both are owned"
+  };
 }

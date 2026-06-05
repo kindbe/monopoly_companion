@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:server": "tsx src/server/index.ts",
+    "dev:all": "concurrently \"pnpm dev:server\" \"pnpm dev\"",
     "build": "tsc -b && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
@@ -14,7 +17,8 @@
     "typescript": "^5.7.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "lucide-react": "^0.468.0"
+    "lucide-react": "^0.468.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
@@ -23,7 +27,11 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@types/ws": "^8.5.13",
+    "@playwright/test": "^1.50.0",
+    "concurrently": "^9.1.0",
     "jsdom": "^25.0.1",
+    "tsx": "^4.19.2",
     "vitest": "^2.1.8"
   }
 }

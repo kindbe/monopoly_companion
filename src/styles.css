@@ -1,9 +1,34 @@
 :root {
-  color: #20251d;
-  background: #f3efe2;
+  --ink: #20251d;
+  --muted: #51574d;
+  --paper: #fffdf5;
+  --panel: rgba(255, 255, 255, 0.8);
+  --field: #fffdf5;
+  --background: #f3efe2;
+  --accent: #df3d2f;
+  --gold: #e4c142;
+  --green: #1d7354;
+  --shadow: #20251d;
+  --danger: #8a1f14;
+  color: var(--ink);
+  background: var(--background);
   font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+}
+
+[data-theme="dark"] {
+  --ink: #f7efd6;
+  --muted: #c7bfa7;
+  --paper: #191b17;
+  --panel: rgba(36, 39, 32, 0.88);
+  --field: #10130f;
+  --background: #11140f;
+  --accent: #e95745;
+  --gold: #b98f22;
+  --green: #256f59;
+  --shadow: #050604;
+  --danger: #ff9a88;
 }
 
 * {
@@ -17,7 +42,7 @@ body {
   background:
     linear-gradient(135deg, rgba(244, 214, 73, 0.35), transparent 35%),
     radial-gradient(circle at top right, rgba(29, 115, 84, 0.22), transparent 32%),
-    #f3efe2;
+    var(--background);
 }
 
 button,
@@ -60,11 +85,20 @@ button {
   text-transform: uppercase;
 }
 
-.cash-badge {
-  border: 2px solid #20251d;
+.masthead-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cash-badge,
+.theme-toggle {
+  border: 2px solid var(--ink);
   border-radius: 6px;
   padding: 10px 12px;
-  background: #ffffffa8;
+  background: var(--panel);
+  color: var(--ink);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -84,11 +118,19 @@ button {
 .property-stage,
 .complete-hero,
 .start-band {
-  border: 2px solid #20251d;
+  border: 2px solid var(--ink);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.76);
+  background: var(--panel);
   padding: 16px;
-  box-shadow: 5px 5px 0 #20251d;
+  box-shadow: 5px 5px 0 var(--shadow);
+}
+
+.panel,
+.property-stage,
+.complete-hero,
+.start-band,
+.summary-card {
+  border-color: var(--ink);
 }
 
 .panel h2 {
@@ -113,10 +155,10 @@ button {
   justify-content: center;
   gap: 8px;
   min-height: 42px;
-  border: 2px solid #20251d;
+  border: 2px solid var(--ink);
   border-radius: 6px;
-  background: #fff;
-  color: #20251d;
+  background: var(--paper);
+  color: var(--ink);
   font-weight: 800;
 }
 
@@ -142,16 +184,17 @@ button {
 input {
   width: 100%;
   min-height: 42px;
-  border: 2px solid #20251d;
+  border: 2px solid var(--ink);
   border-radius: 6px;
-  background: #fffdf5;
+  background: var(--field);
+  color: var(--ink);
   padding: 8px 10px;
 }
 
 .fine-print,
 .current-bid {
   margin: 10px 0 0;
-  color: #51574d;
+  color: var(--muted);
 }
 
 .players-panel {
@@ -172,12 +215,31 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: #e4c142;
+  background: var(--gold);
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .primary-action,
 .secondary-action {
   padding: 10px 16px;
+}
+
+.join-panel {
+  max-width: 520px;
+}
+
+.join-code {
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--field);
+  padding: 16px;
+  font-size: 2rem;
+  font-weight: 900;
 }
 
 .bidding-layout {
@@ -191,11 +253,78 @@ input {
   gap: 12px;
   background:
     repeating-linear-gradient(45deg, rgba(32, 37, 29, 0.06) 0 8px, transparent 8px 16px),
-    #fffdf5;
+    var(--paper);
 }
 
 .property-stage p {
   margin: 0;
+}
+
+.property-card {
+  width: min(420px, 100%);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: #f7f0d8;
+  color: #1b1b18;
+  box-shadow: 0 10px 0 color-mix(in srgb, var(--shadow) 92%, transparent);
+}
+
+.property-color-band {
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  border-bottom: 3px solid #1b1b18;
+  background: var(--property-color);
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.property-card-body {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.property-card h2 {
+  color: #111;
+  font-size: clamp(1.8rem, 5vw, 3.3rem);
+  text-transform: uppercase;
+}
+
+.deed-label,
+.opening-bid {
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.property-stat-row,
+.rent-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.property-stat-row {
+  grid-template-columns: 1fr 1fr;
+  font-weight: 900;
+}
+
+.rent-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  text-align: left;
+}
+
+.rent-grid span,
+.rent-description {
+  border-top: 1px solid rgba(27, 27, 24, 0.24);
+  padding-top: 6px;
+  font-weight: 800;
 }
 
 .hidden-strip {
@@ -206,10 +335,10 @@ input {
 }
 
 .hidden-strip span {
-  border: 2px dashed #20251d;
+  border: 2px dashed var(--ink);
   border-radius: 6px;
   padding: 8px 10px;
-  background: #1d7354;
+  background: var(--green);
   color: #fffdf5;
   font-size: 0.75rem;
   font-weight: 800;
@@ -227,7 +356,7 @@ input {
   grid-template-columns: 1fr auto auto;
   gap: 8px;
   align-items: center;
-  border-top: 1px solid rgba(32, 37, 29, 0.25);
+  border-top: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
   padding-top: 10px;
 }
 
@@ -236,8 +365,18 @@ input {
   gap: 2px;
 }
 
+.bidder-row > div:first-child {
+  min-width: 130px;
+}
+
+.quick-bids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .bidder-row span {
-  color: #51574d;
+  color: var(--muted);
 }
 
 .silent-row {
@@ -245,7 +384,7 @@ input {
   grid-template-columns: 1fr 110px 110px;
   gap: 8px;
   align-items: end;
-  border-top: 1px solid rgba(32, 37, 29, 0.25);
+  border-top: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
   padding-top: 10px;
 }
 
@@ -258,7 +397,7 @@ input {
 
 [role="alert"] {
   margin: 8px 0;
-  color: #8a1f14;
+  color: var(--danger);
   font-weight: 800;
 }
 
@@ -266,7 +405,7 @@ input {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: #1d7354;
+  background: var(--green);
   color: #fffdf5;
 }
 
@@ -279,11 +418,11 @@ input {
 }
 
 .summary-card {
-  border: 2px solid #20251d;
+  border: 2px solid var(--ink);
   border-radius: 8px;
-  background: #fffdf5;
+  background: var(--panel);
   padding: 14px;
-  box-shadow: 4px 4px 0 #20251d;
+  box-shadow: 4px 4px 0 var(--shadow);
 }
 
 .summary-card h3,

@@ -1,14 +1,15 @@
 import { Gavel, RotateCcw, Shuffle, Trophy } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   assignProperty,
   buildEligiblePropertyPool,
+  calculateOpeningBid,
   createAscendingAuction,
   createPlayers,
   createPropertyDeck,
-  MONOPOLY_PROPERTIES,
   passAscendingBidder,
   placeAscendingBid,
+  QUICK_BID_INCREMENTS,
   resolveSilentAuction,
   revealNextProperty,
   skipCurrentProperty,
@@ -19,9 +20,11 @@ import {
   type PropertyDeck,
   type SilentBid
 } from "./domain/bidding";
+import type { HostState, PlayerState, ServerEvent } from "./shared/multiplayer";
 
 type BiddingMode = "ascending" | "silent";
-type Phase = "setup" | "bidding" | "complete";
+type Phase = "setup" | "bidding" | "complete" | "hostLobby" | "playerJoin" | "playerBidding";
+type Theme = "light" | "dark";
 
 type CompletedBid = {
   property: Property;
@@ -47,9 +50,24 @@ export default function App() {
   const [tiedPlayerIds, setTiedPlayerIds] = useState<string[]>([]);
   const [completedBids, setCompletedBids] = useState<CompletedBid[]>([]);
   const [message, setMessage] = useState("");
+  const [joinCode, setJoinCode] = useState("TABLE1");
+  const [playerJoinCode, setPlayerJoinCode] = useState("");
+  const [joiningPlayerName, setJoiningPlayerName] = useState("");
+  const [joinedPlayerName, setJoinedPlayerName] = useState("");
+  const [multiplayerMessage, setMultiplayerMessage] = useState("");
+  const [hostState, setHostState] = useState<HostState | null>(null);
+  const [playerState, setPlayerState] = useState<PlayerState | null>(null);
+  const [theme, setTheme] = useState<Theme>(() => initialTheme());
+  const playerIdRef = useRef<string | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
 
   const eligiblePool = buildEligiblePropertyPool({ includeRailroads, includeUtilities });
   const cappedPropertyCount = Math.min(propertyCount, eligiblePool.length);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   function updatePlayerName(index: number, name: string) {
     setPlayerNames((names) => names.map((current, currentIndex) => (currentIndex === index ? name : current)));
@@ -75,8 +93,19 @@ export default function App() {
     setPlayers(nextPlayers);
     setDeck(revealed.deck);
     setCurrentProperty(revealed.property);
-    setAscendingAuction(mode === "ascending" ? createAscendingAuction(nextPlayers, increment) : null);
-    setSilentBids(Object.fromEntries(nextPlayers.map((player) => [player.id, { openingBid: 0, maxBid: 0 }])));
+    setAscendingAuction(
+      revealed.property && mode === "ascending"
+        ? createAscendingAuction(nextPlayers, increment, calculateOpeningBid(revealed.property))
+        : null
+    );
+    setSilentBids(
+      Object.fromEntries(
+        nextPlayers.map((player) => [
+          player.id,
+          { openingBid: revealed.property ? calculateOpeningBid(revealed.property) : 0, maxBid: 0 }
+        ])
+      )
+    );
     setTiedPlayerIds([]);
     setCompletedBids([]);
     setMessage("");
@@ -87,8 +116,19 @@ export default function App() {
     const revealed = revealNextProperty(deck);
     setDeck(revealed.deck);
     setCurrentProperty(revealed.property);
-    setAscendingAuction(revealed.property && mode === "ascending" ? createAscendingAuction(nextPlayers, increment) : null);
-    setSilentBids(Object.fromEntries(nextPlayers.map((player) => [player.id, { openingBid: 0, maxBid: 0 }])));
+    setAscendingAuction(
+      revealed.property && mode === "ascending"
+        ? createAscendingAuction(nextPlayers, increment, calculateOpeningBid(revealed.property))
+        : null
+    );
+    setSilentBids(
+      Object.fromEntries(
+        nextPlayers.map((player) => [
+          player.id,
+          { openingBid: revealed.property ? calculateOpeningBid(revealed.property) : 0, maxBid: 0 }
+        ])
+      )
+    );
     setTiedPlayerIds([]);
     setMessage("");
 
@@ -109,14 +149,14 @@ export default function App() {
     revealFollowingProperty(nextPlayers, nextCompletedBids);
   }
 
-  function placeBid(playerId: string) {
+  function placeBid(playerId: string, bidIncrement: number) {
     if (!ascendingAuction) return;
     const player = players.find((candidate) => candidate.id === playerId);
     if (!player) return;
 
     try {
       setAscendingAuction(
-        placeAscendingBid(ascendingAuction, playerId, ascendingAuction.currentBid + increment, player.remainingCash)
+        placeAscendingBid(ascendingAuction, playerId, ascendingAuction.currentBid + bidIncrement, player.remainingCash)
       );
       setMessage("");
     } catch (error) {
@@ -176,6 +216,112 @@ export default function App() {
     setMessage("");
   }
 
+  function hostMultiplayer() {
+    setJoinCode(createLocalJoinCode());
+    setPhase("hostLobby");
+    connectSocket((socket) => {
+      socket.send(
+        JSON.stringify({
+          type: "create-session",
+          config: {
+            includeRailroads,
+            includeUtilities,
+            propertyCount: cappedPropertyCount,
+            increment,
+            countdownSeconds: e2eCountdownSeconds()
+          }
+        })
+      );
+    });
+  }
+
+  function joinMultiplayer() {
+    setPlayerJoinCode("");
+    setJoiningPlayerName("");
+    setMultiplayerMessage("");
+    setPhase("playerJoin");
+  }
+
+  function submitPlayerJoin() {
+    if (!playerJoinCode.trim() || !joiningPlayerName.trim()) {
+      setMultiplayerMessage("Join code and player name are required.");
+      return;
+    }
+
+    const nextName = joiningPlayerName.trim();
+    const nextJoinCode = playerJoinCode.trim().toUpperCase();
+
+    connectSocket((socket) => {
+      socket.send(JSON.stringify({ type: "join-session", joinCode: nextJoinCode, name: nextName }));
+    });
+
+    setJoinedPlayerName(nextName);
+    setMultiplayerMessage("");
+    setPhase("playerBidding");
+  }
+
+  function startMultiplayerBidding() {
+    if (socketRef.current?.readyState === WebSocket.OPEN && hostState?.joinCode) {
+      socketRef.current.send(JSON.stringify({ type: "start-bidding", joinCode: hostState.joinCode }));
+      return;
+    }
+    setPhase("setup");
+  }
+
+  function submitMultiplayerBid(bidIncrement: number) {
+    if (!playerState || !playerIdRef.current || socketRef.current?.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    socketRef.current.send(
+      JSON.stringify({
+        type: "raise-bid",
+        joinCode: playerState.joinCode,
+        playerId: playerIdRef.current,
+        increment: bidIncrement
+      })
+    );
+  }
+
+  function skipMultiplayerProperty() {
+    if (!playerState || !playerIdRef.current || socketRef.current?.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    socketRef.current.send(
+      JSON.stringify({
+        type: "skip-property",
+        joinCode: playerState.joinCode,
+        playerId: playerIdRef.current
+      })
+    );
+  }
+
+  function connectSocket(onOpen: (socket: WebSocket) => void) {
+    if (typeof WebSocket === "undefined") {
+      return;
+    }
+
+    const socket = new WebSocket(webSocketUrl());
+    socketRef.current = socket;
+    socket.addEventListener("open", () => onOpen(socket));
+    socket.addEventListener("message", (event) => {
+      const serverEvent = JSON.parse(String(event.data)) as ServerEvent;
+      if (serverEvent.type === "host-state") {
+        setHostState(serverEvent.state);
+        setJoinCode(serverEvent.state.joinCode);
+      }
+      if (serverEvent.type === "joined") {
+        playerIdRef.current = serverEvent.playerId;
+      }
+      if (serverEvent.type === "player-state") {
+        setPlayerState(serverEvent.state);
+        setPhase("playerBidding");
+      }
+      if (serverEvent.type === "error") {
+        setMultiplayerMessage(serverEvent.message);
+      }
+    });
+  }
+
   return (
     <main className="app-shell">
       <section className="masthead">
@@ -183,7 +329,16 @@ export default function App() {
           <p className="kicker">Hidden-deck setup auction</p>
           <h1>Property Bid Companion</h1>
         </div>
-        <div className="cash-badge">${STARTING_CASH} starting cash</div>
+        <div className="masthead-actions">
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+          >
+            Switch to {theme === "dark" ? "light" : "dark"} mode
+          </button>
+          <div className="cash-badge">${STARTING_CASH} starting cash</div>
+        </div>
       </section>
 
       {phase === "setup" ? (
@@ -204,6 +359,8 @@ export default function App() {
           addPlayer={addPlayer}
           removePlayer={removePlayer}
           startBidding={startBidding}
+          hostMultiplayer={hostMultiplayer}
+          joinMultiplayer={joinMultiplayer}
           message={message}
         />
       ) : null}
@@ -232,6 +389,45 @@ export default function App() {
       {phase === "complete" ? (
         <CompleteScreen players={players} completedBids={completedBids} restart={restart} />
       ) : null}
+
+      {phase === "hostLobby" ? (
+        <HostLobbyScreen
+          joinCode={hostState?.joinCode ?? joinCode}
+          players={hostState?.players ?? []}
+          phase={hostState?.phase ?? "lobby"}
+          currentProperty={hostState?.currentProperty?.name ?? null}
+          countdownRemaining={hostState?.countdownRemaining ?? 0}
+          completedBidCount={hostState?.completedBids.length ?? 0}
+          startBidding={startMultiplayerBidding}
+          restart={restart}
+        />
+      ) : null}
+
+      {phase === "playerJoin" ? (
+        <PlayerJoinScreen
+          joinCode={playerJoinCode}
+          name={joiningPlayerName}
+          message={multiplayerMessage}
+          setJoinCode={setPlayerJoinCode}
+          setName={setJoiningPlayerName}
+          join={submitPlayerJoin}
+          back={restart}
+        />
+      ) : null}
+
+      {phase === "playerBidding" ? (
+        <PlayerBiddingScreen
+          playerName={playerState?.player.name ?? joinedPlayerName}
+          currentProperty={playerState?.currentProperty ?? null}
+          currentBid={playerState?.currentBid ?? 0}
+          remainingPropertyCount={playerState?.remainingPropertyCount ?? 10}
+          countdownRemaining={playerState?.countdownRemaining ?? 30}
+          remainingCash={playerState?.player.remainingCash ?? 1500}
+          wonProperties={playerState?.player.properties.map((property) => property.name) ?? []}
+          bid={submitMultiplayerBid}
+          skip={skipMultiplayerProperty}
+        />
+      ) : null}
     </main>
   );
 }
@@ -253,6 +449,8 @@ function SetupScreen(props: {
   addPlayer: () => void;
   removePlayer: (index: number) => void;
   startBidding: () => void;
+  hostMultiplayer: () => void;
+  joinMultiplayer: () => void;
   message: string;
 }) {
   return (
@@ -333,9 +531,17 @@ function SetupScreen(props: {
 
       <section className="start-band">
         {props.message ? <p role="alert">{props.message}</p> : null}
-        <button type="button" className="primary-action" onClick={props.startBidding}>
-          <Gavel size={20} /> Start bidding
-        </button>
+        <div className="action-row">
+          <button type="button" className="primary-action" onClick={props.startBidding}>
+            <Gavel size={20} /> Start bidding
+          </button>
+          <button type="button" className="secondary-action" onClick={props.hostMultiplayer}>
+            Host multiplayer
+          </button>
+          <button type="button" className="secondary-action" onClick={props.joinMultiplayer}>
+            Join session
+          </button>
+        </div>
       </section>
     </div>
   );
@@ -353,7 +559,7 @@ function BiddingScreen(props: {
   silentBids: Record<string, { openingBid: number; maxBid: number }>;
   tiedPlayerIds: string[];
   setSilentBids: React.Dispatch<React.SetStateAction<Record<string, { openingBid: number; maxBid: number }>>>;
-  placeBid: (playerId: string) => void;
+  placeBid: (playerId: string, bidIncrement: number) => void;
   passBidder: (playerId: string) => void;
   skipProperty: () => void;
   submitSilentAuction: () => void;
@@ -370,8 +576,8 @@ function BiddingScreen(props: {
         <p className="kicker">
           Property {props.currentIndex} of {props.totalCount}
         </p>
-        <h2>{props.currentProperty.name}</h2>
-        <p>{props.currentProperty.colorGroup ?? props.currentProperty.category}</p>
+        <PropertyCard property={props.currentProperty} />
+        <p className="opening-bid">Opening bid: ${calculateOpeningBid(props.currentProperty)}</p>
         <div className="hidden-strip">
           {props.deck.hidden.map((property) => (
             <span key={property.id}>Hidden</span>
@@ -391,9 +597,13 @@ function BiddingScreen(props: {
                     <strong>{player.name}</strong>
                     <span>${player.remainingCash}</span>
                   </div>
-                  <button type="button" onClick={() => props.placeBid(player.id)}>
-                    +${props.increment}
-                  </button>
+                  <div className="quick-bids" aria-label={`${player.name} bid increments`}>
+                    {QUICK_BID_INCREMENTS.map((bidIncrement) => (
+                      <button type="button" key={bidIncrement} onClick={() => props.placeBid(player.id, bidIncrement)}>
+                        +${bidIncrement}
+                      </button>
+                    ))}
+                  </div>
                   <button type="button" onClick={() => props.passBidder(player.id)}>
                     Pass
                   </button>
@@ -460,6 +670,41 @@ function BiddingScreen(props: {
   );
 }
 
+function PropertyCard({ property }: { property: Property }) {
+  return (
+    <article className="property-card" style={{ "--property-color": propertyAccent(property) } as React.CSSProperties}>
+      <div className="property-color-band">
+        <span>{property.category === "street" ? property.colorGroup : property.category}</span>
+      </div>
+      <div className="property-card-body">
+        <p className="deed-label">Title Deed</p>
+        <h2>{property.name}</h2>
+        <div className="property-stat-row">
+          <span>Price: ${property.retailValue}</span>
+          <span>Mortgage: ${property.mortgage}</span>
+        </div>
+        {property.category === "street" ? (
+          <>
+            <div className="rent-grid" aria-label={`${property.name} rent schedule`}>
+              <span>Rent ${property.rent[0]}</span>
+              <span>1 house ${property.rent[1]}</span>
+              <span>2 houses ${property.rent[2]}</span>
+              <span>3 houses ${property.rent[3]}</span>
+              <span>4 houses ${property.rent[4]}</span>
+              <span>Hotel ${property.rent[5]}</span>
+            </div>
+            <p className="fine-print">
+              Houses ${property.houseCost} each. Hotel ${property.hotelCost} plus 4 houses.
+            </p>
+          </>
+        ) : (
+          <p className="rent-description">{property.rentDescription}</p>
+        )}
+      </div>
+    </article>
+  );
+}
+
 function CompleteScreen({
   players,
   completedBids,
@@ -496,4 +741,201 @@ function CompleteScreen({
       </button>
     </div>
   );
+}
+
+function HostLobbyScreen({
+  joinCode,
+  players,
+  phase,
+  currentProperty,
+  countdownRemaining,
+  completedBidCount,
+  startBidding,
+  restart
+}: {
+  joinCode: string;
+  players: { id: string; name: string; connected: boolean }[];
+  phase: string;
+  currentProperty: string | null;
+  countdownRemaining: number;
+  completedBidCount: number;
+  startBidding: () => void;
+  restart: () => void;
+}) {
+  return (
+    <div className="setup-grid">
+      <section className="panel">
+        <h2>Host Lobby</h2>
+        <p className="kicker">Join code</p>
+        <div className="join-code" data-testid="join-code">{joinCode}</div>
+        <p className="fine-print">Players join from their own browser using this code.</p>
+      </section>
+      <section className="panel">
+        <h2>Players</h2>
+        {players.length ? (
+          <ul>
+            {players.map((player) => (
+              <li key={player.id}>
+                {player.name} {player.connected ? "connected" : "disconnected"}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="fine-print">Waiting for players to join.</p>
+        )}
+        {phase === "bidding" ? (
+          <p className="fine-print">
+            {currentProperty ?? "Current property"} with {countdownRemaining}s remaining.
+          </p>
+        ) : null}
+        {phase === "complete" ? <p className="fine-print">Completed bids: {completedBidCount}</p> : null}
+      </section>
+      <section className="start-band">
+        <div className="action-row">
+          <button type="button" className="primary-action" onClick={startBidding}>
+            Start multiplayer bidding
+          </button>
+          <button type="button" className="secondary-action" onClick={restart}>
+            Back
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PlayerJoinScreen({
+  joinCode,
+  name,
+  message,
+  setJoinCode,
+  setName,
+  join,
+  back
+}: {
+  joinCode: string;
+  name: string;
+  message: string;
+  setJoinCode: (value: string) => void;
+  setName: (value: string) => void;
+  join: () => void;
+  back: () => void;
+}) {
+  return (
+    <section className="panel join-panel">
+      <h2>Join Session</h2>
+      <label className="field">
+        <span>Join code</span>
+        <input aria-label="Join code" value={joinCode} onChange={(event) => setJoinCode(event.target.value)} />
+      </label>
+      <label className="field">
+        <span>Player name</span>
+        <input aria-label="Player name" value={name} onChange={(event) => setName(event.target.value)} />
+      </label>
+      {message ? <p role="alert">{message}</p> : null}
+      <div className="action-row">
+        <button type="button" className="primary-action" onClick={join}>
+          Join
+        </button>
+        <button type="button" className="secondary-action" onClick={back}>
+          Back
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function PlayerBiddingScreen({
+  playerName,
+  currentProperty,
+  currentBid,
+  remainingPropertyCount,
+  countdownRemaining,
+  remainingCash,
+  wonProperties,
+  bid,
+  skip
+}: {
+  playerName: string;
+  currentProperty: Property | null;
+  currentBid: number;
+  remainingPropertyCount: number;
+  countdownRemaining: number;
+  remainingCash: number;
+  wonProperties: string[];
+  bid: (bidIncrement: number) => void;
+  skip: () => void;
+}) {
+  return (
+    <div className="bidding-layout">
+      <section className="property-stage">
+        <p className="kicker">{countdownRemaining} seconds</p>
+        <h2>Player Bidding</h2>
+        {currentProperty ? <PropertyCard property={currentProperty} /> : <p>Current property</p>}
+        <p>Remaining properties: {remainingPropertyCount}</p>
+      </section>
+      <section className="panel">
+        <h2>{playerName}</h2>
+        <p className="current-bid">Current bid: ${currentBid}</p>
+        <p className="current-bid">Your cash: ${remainingCash}</p>
+        <h3>Your properties</h3>
+        {wonProperties.length ? (
+          <ul>
+            {wonProperties.map((property) => (
+              <li key={property}>{property}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="fine-print">No properties won</p>
+        )}
+        <div className="action-row">
+          {QUICK_BID_INCREMENTS.map((bidIncrement) => (
+            <button type="button" className="primary-action" key={bidIncrement} onClick={() => bid(bidIncrement)}>
+              +${bidIncrement}
+            </button>
+          ))}
+          <button type="button" className="secondary-action" onClick={skip}>
+            Skip
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function createLocalJoinCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function webSocketUrl() {
+  return import.meta.env.VITE_WS_URL ?? `ws://${window.location.hostname}:8787`;
+}
+
+function e2eCountdownSeconds() {
+  const value = Number(import.meta.env.VITE_E2E_COUNTDOWN_SECONDS);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function initialTheme(): Theme {
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme === "light" || savedTheme === "dark") {
+    return savedTheme;
+  }
+  return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+}
+
+function propertyAccent(property: Property) {
+  if (property.category === "railroad") return "#1f2937";
+  if (property.category === "utility") return "#0891b2";
+  const colors: Record<string, string> = {
+    Brown: "#8b4513",
+    "Light Blue": "#7dd3fc",
+    Pink: "#ec4899",
+    Orange: "#f97316",
+    Red: "#dc2626",
+    Yellow: "#facc15",
+    Green: "#16a34a",
+    "Dark Blue": "#1d4ed8"
+  };
+  return colors[property.colorGroup] ?? "#111827";
 }
