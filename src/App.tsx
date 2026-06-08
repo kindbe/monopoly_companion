@@ -41,6 +41,7 @@ export default function App() {
   const [includeUtilities, setIncludeUtilities] = useState(false);
   const [propertyCount, setPropertyCount] = useState(10);
   const [increment, setIncrement] = useState(10);
+  const [bidDeadline, setBidDeadline] = useState(10);
   const [playerNames, setPlayerNames] = useState(DEFAULT_PLAYER_NAMES);
   const [players, setPlayers] = useState<Player[]>(() => createPlayers(DEFAULT_PLAYER_NAMES));
   const [deck, setDeck] = useState<PropertyDeck>({ revealed: [], hidden: [] });
@@ -50,6 +51,9 @@ export default function App() {
   const [tiedPlayerIds, setTiedPlayerIds] = useState<string[]>([]);
   const [completedBids, setCompletedBids] = useState<CompletedBid[]>([]);
   const [message, setMessage] = useState("");
+  const [selectedWonProperty, setSelectedWonProperty] = useState<Property | null>(null);
+  const [bidFeedback, setBidFeedback] = useState<{ playerId: string; increment: number } | null>(null);
+  const [lastWinnerName, setLastWinnerName] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState("TABLE1");
   const [playerJoinCode, setPlayerJoinCode] = useState("");
   const [joiningPlayerName, setJoiningPlayerName] = useState("");
@@ -57,6 +61,7 @@ export default function App() {
   const [multiplayerMessage, setMultiplayerMessage] = useState("");
   const [hostState, setHostState] = useState<HostState | null>(null);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
+  const [localCountdownRemaining, setLocalCountdownRemaining] = useState(30);
   const [theme, setTheme] = useState<Theme>(() => initialTheme());
   const playerIdRef = useRef<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -68,6 +73,28 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (phase !== "playerBidding" || !playerState) {
+      return;
+    }
+    setLocalCountdownRemaining(playerState.countdownRemaining);
+    let timeoutId: number | undefined;
+
+    function tick(remaining: number) {
+      timeoutId = window.setTimeout(() => {
+        const nextRemaining = Math.max(0, remaining - 1);
+        setLocalCountdownRemaining(nextRemaining);
+        if (nextRemaining > 0) {
+          playSound("tick");
+          tick(nextRemaining);
+        }
+      }, countdownTickDelay(remaining));
+    }
+
+    tick(playerState.countdownRemaining);
+    return () => window.clearTimeout(timeoutId);
+  }, [phase, playerState]);
 
   function updatePlayerName(index: number, name: string) {
     setPlayerNames((names) => names.map((current, currentIndex) => (currentIndex === index ? name : current)));
@@ -112,7 +139,7 @@ export default function App() {
     setPhase("bidding");
   }
 
-  function revealFollowingProperty(nextPlayers = players, nextCompletedBids = completedBids) {
+  function revealFollowingProperty(nextPlayers = players, nextCompletedBids = completedBids, nextMessage = "") {
     const revealed = revealNextProperty(deck);
     setDeck(revealed.deck);
     setCurrentProperty(revealed.property);
@@ -130,7 +157,7 @@ export default function App() {
       )
     );
     setTiedPlayerIds([]);
-    setMessage("");
+    setMessage(nextMessage);
 
     if (!revealed.property) {
       setCompletedBids(nextCompletedBids);
@@ -138,15 +165,20 @@ export default function App() {
     }
   }
 
-  function recordResult(winnerId: string | null, price: number) {
+  function recordResult(winnerId: string | null, price: number, nextMessage = "") {
     if (!currentProperty) return;
 
     const result = { winnerId, price };
+    const winnerName = players.find((player) => player.id === winnerId)?.name ?? null;
     const nextPlayers = winnerId ? assignProperty(players, currentProperty, result) : players;
     const nextCompletedBids = [...completedBids, { property: currentProperty, winnerId, price }];
     setPlayers(nextPlayers);
     setCompletedBids(nextCompletedBids);
-    revealFollowingProperty(nextPlayers, nextCompletedBids);
+    setLastWinnerName(winnerName);
+    if (winnerName) {
+      playSound("win");
+    }
+    revealFollowingProperty(nextPlayers, nextCompletedBids, nextMessage);
   }
 
   function placeBid(playerId: string, bidIncrement: number) {
@@ -158,6 +190,8 @@ export default function App() {
       setAscendingAuction(
         placeAscendingBid(ascendingAuction, playerId, ascendingAuction.currentBid + bidIncrement, player.remainingCash)
       );
+      setBidFeedback({ playerId, increment: bidIncrement });
+      playSound("bid");
       setMessage("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Bid could not be placed.");
@@ -170,7 +204,9 @@ export default function App() {
     setAscendingAuction(nextAuction);
 
     if (nextAuction.result) {
-      recordResult(nextAuction.result.winnerId, nextAuction.result.price);
+      const nextMessage =
+        nextAuction.status === "skipped" ? "All players skipped. Moving to the next property." : "";
+      recordResult(nextAuction.result.winnerId, nextAuction.result.price, nextMessage);
     }
   }
 
@@ -228,7 +264,7 @@ export default function App() {
             includeUtilities,
             propertyCount: cappedPropertyCount,
             increment,
-            countdownSeconds: e2eCountdownSeconds()
+            countdownSeconds: e2eCountdownSeconds() ?? bidDeadline
           }
         })
       );
@@ -354,6 +390,8 @@ export default function App() {
           maxProperties={eligiblePool.length}
           increment={increment}
           setIncrement={setIncrement}
+          bidDeadline={bidDeadline}
+          setBidDeadline={setBidDeadline}
           playerNames={playerNames}
           updatePlayerName={updatePlayerName}
           addPlayer={addPlayer}
@@ -383,11 +421,18 @@ export default function App() {
           skipProperty={skipProperty}
           submitSilentAuction={submitSilentAuction}
           message={message}
+          bidFeedback={bidFeedback}
         />
       ) : null}
 
       {phase === "complete" ? (
-        <CompleteScreen players={players} completedBids={completedBids} restart={restart} />
+        <CompleteScreen
+          players={players}
+          completedBids={completedBids}
+          restart={restart}
+          inspectProperty={setSelectedWonProperty}
+          lastWinnerName={lastWinnerName}
+        />
       ) : null}
 
       {phase === "hostLobby" ? (
@@ -421,12 +466,18 @@ export default function App() {
           currentProperty={playerState?.currentProperty ?? null}
           currentBid={playerState?.currentBid ?? 0}
           remainingPropertyCount={playerState?.remainingPropertyCount ?? 10}
-          countdownRemaining={playerState?.countdownRemaining ?? 30}
+          countdownRemaining={localCountdownRemaining}
           remainingCash={playerState?.player.remainingCash ?? 1500}
-          wonProperties={playerState?.player.properties.map((property) => property.name) ?? []}
+          wonProperties={playerState?.player.properties ?? []}
+          hasSkipped={playerState?.hasSkipped ?? false}
+          roundMessage={playerState?.roundMessage ?? null}
           bid={submitMultiplayerBid}
           skip={skipMultiplayerProperty}
         />
+      ) : null}
+
+      {selectedWonProperty ? (
+        <PropertyDialog property={selectedWonProperty} close={() => setSelectedWonProperty(null)} />
       ) : null}
     </main>
   );
@@ -444,6 +495,8 @@ function SetupScreen(props: {
   maxProperties: number;
   increment: number;
   setIncrement: (increment: number) => void;
+  bidDeadline: number;
+  setBidDeadline: (seconds: number) => void;
   playerNames: string[];
   updatePlayerName: (index: number, name: string) => void;
   addPlayer: () => void;
@@ -474,6 +527,18 @@ function SetupScreen(props: {
             step={1}
             value={props.increment}
             onChange={(event) => props.setIncrement(Math.max(1, Number(event.target.value)))}
+          />
+        </label>
+        <label className="field">
+          <span>Bid deadline</span>
+          <input
+            aria-label="Bid deadline"
+            type="number"
+            min={5}
+            max={30}
+            step={1}
+            value={props.bidDeadline}
+            onChange={(event) => props.setBidDeadline(clampNumber(Number(event.target.value), 5, 30))}
           />
         </label>
       </section>
@@ -564,11 +629,13 @@ function BiddingScreen(props: {
   skipProperty: () => void;
   submitSilentAuction: () => void;
   message: string;
+  bidFeedback: { playerId: string; increment: number } | null;
 }) {
   const activeSilentPlayers =
     props.tiedPlayerIds.length > 0
       ? props.players.filter((player) => props.tiedPlayerIds.includes(player.id))
       : props.players;
+  const ascendingAuction = props.ascendingAuction;
 
   return (
     <div className="bidding-layout">
@@ -587,25 +654,45 @@ function BiddingScreen(props: {
 
       <section className="panel">
         <h2>{props.mode === "ascending" ? "Ascending Auction" : props.tiedPlayerIds.length ? "Sudden-Death Re-Bid" : "Silent Auction"}</h2>
-        {props.mode === "ascending" && props.ascendingAuction ? (
+        {props.mode === "ascending" && ascendingAuction ? (
           <>
-            <p className="current-bid">Current bid: ${props.ascendingAuction.currentBid}</p>
+            <p className="current-bid">Current bid: ${ascendingAuction.currentBid}</p>
+            {props.bidFeedback ? (
+              <span className="bid-pop" data-testid="bid-pop">
+                +${props.bidFeedback.increment}
+              </span>
+            ) : null}
             <div className="bidder-list">
               {props.players.map((player) => (
-                <div className="bidder-row" key={player.id}>
+                <div
+                  className={`bidder-row ${ascendingAuction.activeBidderIds.includes(player.id) ? "" : "is-skipped"}`}
+                  data-testid={`bidder-row-${player.id}`}
+                  key={player.id}
+                >
                   <div>
                     <strong>{player.name}</strong>
                     <span>${player.remainingCash}</span>
                   </div>
                   <div className="quick-bids" aria-label={`${player.name} bid increments`}>
                     {QUICK_BID_INCREMENTS.map((bidIncrement) => (
-                      <button type="button" key={bidIncrement} onClick={() => props.placeBid(player.id, bidIncrement)}>
+                      <button
+                        type="button"
+                        aria-label={`${player.name} +$${bidIncrement}`}
+                        disabled={!ascendingAuction.activeBidderIds.includes(player.id)}
+                        key={bidIncrement}
+                        onClick={() => props.placeBid(player.id, bidIncrement)}
+                      >
                         +${bidIncrement}
                       </button>
                     ))}
                   </div>
-                  <button type="button" onClick={() => props.passBidder(player.id)}>
-                    Pass
+                  <button
+                    type="button"
+                    aria-label={`${player.name} Skip`}
+                    disabled={!ascendingAuction.activeBidderIds.includes(player.id)}
+                    onClick={() => props.passBidder(player.id)}
+                  >
+                    Skip
                   </button>
                 </div>
               ))}
@@ -708,37 +795,74 @@ function PropertyCard({ property }: { property: Property }) {
 function CompleteScreen({
   players,
   completedBids,
-  restart
+  restart,
+  inspectProperty,
+  lastWinnerName
 }: {
   players: Player[];
   completedBids: CompletedBid[];
   restart: () => void;
+  inspectProperty: (property: Property) => void;
+  lastWinnerName: string | null;
 }) {
   return (
     <div className="complete-layout">
-      <section className="complete-hero">
+      <section className={`complete-hero ${lastWinnerName ? "win-celebration" : ""}`}>
         <Trophy size={34} />
         <h2>Setup complete</h2>
         <p>{completedBids.length} properties resolved.</p>
+        {lastWinnerName ? <p>{lastWinnerName} wins!</p> : null}
       </section>
       <section className="summary-grid">
         {players.map((player) => (
           <article className="summary-card" key={player.id}>
             <h3>{player.name}</h3>
             <p>${player.remainingCash}</p>
-            <ul>
-              {player.properties.length ? (
-                player.properties.map((property) => <li key={property.id}>{property.name}</li>)
-              ) : (
-                <li>No properties won</li>
-              )}
-            </ul>
+            {player.properties.length ? (
+              <div className="won-property-groups">
+                {groupWonProperties(player.properties).map((group) => (
+                  <section className="won-property-group" key={group.label}>
+                    <h4>{group.label} color group</h4>
+                    <div className="mini-card-row">
+                      {group.properties.map((property) => (
+                        <button
+                          type="button"
+                          className="mini-property-card"
+                          style={{ "--property-color": propertyAccent(property) } as React.CSSProperties}
+                          aria-label={`View ${property.name}`}
+                          key={property.id}
+                          onClick={() => inspectProperty(property)}
+                        >
+                          <span>{property.name}</span>
+                          <strong>${property.retailValue}</strong>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <p className="fine-print">No properties won</p>
+            )}
           </article>
         ))}
       </section>
       <button type="button" className="secondary-action" onClick={restart}>
         <RotateCcw size={18} /> New setup
       </button>
+    </div>
+  );
+}
+
+function PropertyDialog({ property, close }: { property: Property; close: () => void }) {
+  return (
+    <div className="dialog-backdrop">
+      <section className="property-dialog" role="dialog" aria-modal="true" aria-label={property.name}>
+        <PropertyCard property={property} />
+        <button type="button" className="secondary-action" onClick={close}>
+          Close
+        </button>
+      </section>
     </div>
   );
 }
@@ -853,6 +977,8 @@ function PlayerBiddingScreen({
   countdownRemaining,
   remainingCash,
   wonProperties,
+  hasSkipped,
+  roundMessage,
   bid,
   skip
 }: {
@@ -862,43 +988,65 @@ function PlayerBiddingScreen({
   remainingPropertyCount: number;
   countdownRemaining: number;
   remainingCash: number;
-  wonProperties: string[];
+  wonProperties: Property[];
+  hasSkipped: boolean;
+  roundMessage: string | null;
   bid: (bidIncrement: number) => void;
   skip: () => void;
 }) {
+  const countdownClass = countdownRemaining <= 5 && countdownRemaining > 0 ? "countdown countdown-urgent" : "countdown";
   return (
     <div className="bidding-layout">
       <section className="property-stage">
-        <p className="kicker">{countdownRemaining} seconds</p>
-        <h2>Player Bidding</h2>
-        {currentProperty ? <PropertyCard property={currentProperty} /> : <p>Current property</p>}
+        <div className="property-card-wrap">
+          {currentProperty ? <PropertyCard property={currentProperty} /> : <p>Current property</p>}
+          {roundMessage === "Skipped!" ? <div className="skipped-overlay">Skipped!</div> : null}
+        </div>
+        <p className={countdownClass}>{countdownRemaining}s</p>
         <p>Remaining properties: {remainingPropertyCount}</p>
       </section>
-      <section className="panel">
+      <section className="panel player-bid-panel">
         <h2>{playerName}</h2>
+        {roundMessage ? <p role="status">{roundMessage}</p> : null}
         <p className="current-bid">Current bid: ${currentBid}</p>
-        <p className="current-bid">Your cash: ${remainingCash}</p>
-        <h3>Your properties</h3>
-        {wonProperties.length ? (
-          <ul>
-            {wonProperties.map((property) => (
-              <li key={property}>{property}</li>
+        <div className="money-bid-row">
+          <p className="current-bid money-card">Your cash: ${remainingCash}</p>
+          <div className="player-quick-bids">
+            {QUICK_BID_INCREMENTS.map((bidIncrement) => (
+              <button
+                type="button"
+                className="primary-action"
+                disabled={hasSkipped}
+                key={bidIncrement}
+                onClick={() => bid(bidIncrement)}
+              >
+                +${bidIncrement}
+              </button>
             ))}
-          </ul>
-        ) : (
-          <p className="fine-print">No properties won</p>
-        )}
-        <div className="action-row">
-          {QUICK_BID_INCREMENTS.map((bidIncrement) => (
-            <button type="button" className="primary-action" key={bidIncrement} onClick={() => bid(bidIncrement)}>
-              +${bidIncrement}
-            </button>
-          ))}
-          <button type="button" className="secondary-action" onClick={skip}>
-            Skip
-          </button>
+          </div>
         </div>
+        <button type="button" className="secondary-action skip-bar" disabled={hasSkipped} onClick={skip}>
+          {hasSkipped ? "Skipped this round" : "Skip"}
+        </button>
+        <h3>Your properties</h3>
+        {wonProperties.length ? <MiniPropertyCards properties={wonProperties} /> : <p className="fine-print">No properties won</p>}
       </section>
+    </div>
+  );
+}
+
+function MiniPropertyCards({ properties }: { properties: Property[] }) {
+  return (
+    <div className="mini-card-row player-mini-card-row">
+      {sortPropertiesByDisplayValue(properties).map((property) => (
+        <div
+          className="mini-property-card player-mini-property-card"
+          style={{ "--property-color": propertyAccent(property) } as React.CSSProperties}
+          key={property.id}
+        >
+          <span>{property.name}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -916,6 +1064,28 @@ function e2eCountdownSeconds() {
   return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
+function clampNumber(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+export function countdownTickDelay(remainingSeconds: number) {
+  return remainingSeconds <= 5 ? 350 : 1000;
+}
+
+function playSound(kind: "bid" | "win" | "tick") {
+  if (typeof Audio === "undefined") {
+    return;
+  }
+  const audio = new Audio(soundDataUri(kind));
+  void audio.play?.();
+}
+
+function soundDataUri(kind: "bid" | "win" | "tick") {
+  const tone = kind === "win" ? "win" : kind === "tick" ? "tick" : "bid";
+  return `data:audio/wav;base64,${btoa(tone)}`;
+}
+
 function initialTheme(): Theme {
   const savedTheme = localStorage.getItem("theme");
   if (savedTheme === "light" || savedTheme === "dark") {
@@ -928,7 +1098,7 @@ function propertyAccent(property: Property) {
   if (property.category === "railroad") return "#1f2937";
   if (property.category === "utility") return "#0891b2";
   const colors: Record<string, string> = {
-    Brown: "#8b4513",
+    Purple: "#7e3fa3",
     "Light Blue": "#7dd3fc",
     Pink: "#ec4899",
     Orange: "#f97316",
@@ -938,4 +1108,41 @@ function propertyAccent(property: Property) {
     "Dark Blue": "#1d4ed8"
   };
   return colors[property.colorGroup] ?? "#111827";
+}
+
+export function sortPropertiesByDisplayValue(properties: Property[]) {
+  return [...properties].sort((left, right) => {
+    const groupDelta = propertyGroupRank(right) - propertyGroupRank(left);
+    if (groupDelta !== 0) return groupDelta;
+    return right.retailValue - left.retailValue;
+  });
+}
+
+function propertyGroupRank(property: Property) {
+  if (property.category === "railroad") return 1;
+  if (property.category === "utility") return 0;
+  const ranks: Record<string, number> = {
+    "Dark Blue": 8,
+    Green: 7,
+    Yellow: 6,
+    Red: 5,
+    Orange: 4,
+    Pink: 3,
+    "Light Blue": 3,
+    Purple: 2
+  };
+  return ranks[property.colorGroup] ?? 0;
+}
+
+function groupWonProperties(properties: Property[]) {
+  const sortedProperties = sortPropertiesByDisplayValue(properties);
+  const groups = new Map<string, Property[]>();
+  for (const property of sortedProperties) {
+    const label = property.category === "street" ? property.colorGroup : property.category;
+    groups.set(label, [...(groups.get(label) ?? []), property]);
+  }
+  return [...groups.entries()].map(([label, groupProperties]) => ({
+    label,
+    properties: groupProperties
+  }));
 }

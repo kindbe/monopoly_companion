@@ -30,6 +30,7 @@ export type HostState = {
   openingBid: number;
   remainingPropertyCount: number;
   countdownRemaining: number;
+  roundMessage: string | null;
   completedBids: CompletedBid[];
   summary: Player[];
 };
@@ -43,6 +44,8 @@ export type PlayerState = {
   openingBid: number;
   remainingPropertyCount: number;
   countdownRemaining: number;
+  hasSkipped: boolean;
+  roundMessage: string | null;
   player: Player;
 };
 

@@ -1,0 +1,281 @@
+<section class="preview-shell">
+  <style>
+    .preview-shell {
+      min-height: 100vh;
+      padding: 28px;
+      color: #f3ead8;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(128, 70, 190, 0.34), transparent 34%),
+        radial-gradient(circle at 82% 18%, rgba(38, 122, 79, 0.24), transparent 28%),
+        linear-gradient(135deg, #14120f 0%, #24201a 54%, #101615 100%);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .preview-shell h1 {
+      margin: 0 0 8px;
+      font-size: clamp(30px, 5vw, 52px);
+      letter-spacing: -0.05em;
+    }
+
+    .preview-shell p {
+      margin: 0;
+      color: #cdbf9f;
+    }
+
+    .mock-board {
+      display: grid;
+      grid-template-columns: minmax(300px, 420px) minmax(280px, 1fr);
+      gap: 24px;
+      margin-top: 26px;
+      align-items: start;
+    }
+
+    .property-card {
+      position: relative;
+      overflow: hidden;
+      border: 5px solid #0b0a08;
+      border-radius: 18px;
+      background: #f5ead1;
+      color: #14110d;
+      box-shadow: 0 26px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .property-band {
+      min-height: 86px;
+      background: #7f3ca7;
+      border-bottom: 5px solid #0b0a08;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .property-card h2 {
+      margin: 0;
+      font-size: min(32px, 7vw);
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+    }
+
+    .property-body {
+      padding: 22px;
+      display: grid;
+      gap: 12px;
+      font-size: 18px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+      padding-bottom: 8px;
+    }
+
+    .skip-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(13, 10, 7, 0.72);
+      color: #fff3d4;
+      font-size: clamp(42px, 10vw, 86px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transform: rotate(-8deg);
+      text-shadow: 0 5px 0 #000;
+    }
+
+    .timer-under-card {
+      margin-top: 14px;
+      border: 1px solid rgba(245, 234, 209, 0.2);
+      border-radius: 18px;
+      padding: 14px 16px;
+      background: rgba(14, 13, 10, 0.78);
+      text-align: center;
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .timer-under-card strong {
+      display: block;
+      color: #ffe3a6;
+      font-size: 46px;
+      line-height: 1;
+    }
+
+    .auction-panel {
+      border: 1px solid rgba(245, 234, 209, 0.18);
+      border-radius: 24px;
+      padding: 22px;
+      background: rgba(14, 13, 10, 0.72);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .auction-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .auction-stat {
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .auction-stat strong {
+      display: block;
+      font-size: 28px;
+      color: #ffe3a6;
+    }
+
+    .bid-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .money-bid-row {
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) minmax(180px, 1.2fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .bid-buttons button,
+    .skip-button {
+      min-height: 46px;
+      border: 0;
+      border-radius: 999px;
+      color: #18130d;
+      background: #f3c96c;
+      font-weight: 800;
+      box-shadow: 0 7px 0 #7d5520;
+    }
+
+    .bid-buttons button[disabled] {
+      color: #8e8169;
+      background: #4a4439;
+      box-shadow: none;
+    }
+
+    .skip-button {
+      width: 100%;
+      margin-top: 12px;
+      color: #f8e9ca;
+      background: #6b2c2c;
+      box-shadow: 0 7px 0 #2c1010;
+    }
+
+    .owned-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .mini-card {
+      overflow: hidden;
+      min-height: 90px;
+      border: 2px solid #0a0806;
+      border-radius: 10px;
+      background: #f5ead1;
+      color: #16120d;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      line-height: 1.05;
+    }
+
+    .mini-band {
+      height: 28px;
+      border-bottom: 2px solid #0a0806;
+    }
+
+    .mini-card span {
+      display: block;
+      padding: 8px;
+    }
+
+    .settings-note {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2d2af;
+    }
+
+    @media (max-width: 760px) {
+      .mock-board {
+        grid-template-columns: 1fr;
+      }
+
+      .auction-grid,
+      .money-bid-row {
+        grid-template-columns: 1fr;
+      }
+
+      .auction-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+
+  <h1>Bidding Refinement Preview</h1>
+  <p>Proposed direction: quieter player view, card-like property display, capped property title size, purple low-value group, faster configurable timer, and clear skipped state.</p>
+
+  <div class="mock-board">
+    <div>
+      <article class="property-card">
+        <div class="property-band">
+          <h2>Baltic Avenue</h2>
+        </div>
+        <div class="property-body">
+          <div class="stat-row"><span>Retail value</span><strong>$60</strong></div>
+          <div class="stat-row"><span>Opening bid</span><strong>$15</strong></div>
+          <div class="stat-row"><span>Rent</span><strong>$4</strong></div>
+        </div>
+        <div class="skip-overlay">Skipped!</div>
+      </article>
+      <div class="timer-under-card">
+        <strong>10s</strong>
+      </div>
+    </div>
+
+    <section class="auction-panel" aria-label="Player bidding mockup">
+      <div class="auction-grid">
+        <div class="auction-stat"><span>Current bid</span><strong>$70</strong></div>
+        <div class="auction-stat"><span>Remaining Properties</span><strong>8</strong></div>
+      </div>
+
+      <div class="money-bid-row">
+        <div class="auction-stat">
+          <span>Your money</span>
+          <strong>$1,430</strong>
+        </div>
+        <div class="bid-buttons">
+          <button disabled>+$10</button>
+          <button disabled>+$20</button>
+          <button disabled>+$50</button>
+          <button disabled>+$100</button>
+        </div>
+      </div>
+      <button class="skip-button">Skipped this round</button>
+
+      <div class="settings-note">
+        Setup control: bid deadline slider from 5 to 30 seconds, defaulting to 10.
+      </div>
+
+      <h3>Your properties</h3>
+      <div class="owned-row">
+        <div class="mini-card"><div class="mini-band" style="background:#174ea6"></div><span>Boardwalk</span></div>
+        <div class="mini-card"><div class="mini-band" style="background:#1f8a4c"></div><span>Pacific Avenue</span></div>
+        <div class="mini-card"><div class="mini-band" style="background:#f0ca24"></div><span>Ventnor Avenue</span></div>
+        <div class="mini-card"><div class="mini-band" style="background:#df2735"></div><span>Kentucky Avenue</span></div>
+        <div class="mini-card"><div class="mini-band" style="background:#7f3ca7"></div><span>Mediterranean Avenue</span></div>
+      </div>
+    </section>
+  </div>
+</section>

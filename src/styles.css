@@ -5,7 +5,7 @@
   --panel: rgba(255, 255, 255, 0.8);
   --field: #fffdf5;
   --background: #f3efe2;
-  --accent: #df3d2f;
+  --accent: #2f6f5e;
   --gold: #e4c142;
   --green: #1d7354;
   --shadow: #20251d;
@@ -39,10 +39,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    linear-gradient(135deg, rgba(244, 214, 73, 0.35), transparent 35%),
-    radial-gradient(circle at top right, rgba(29, 115, 84, 0.22), transparent 32%),
-    var(--background);
+  background: var(--background);
 }
 
 button,
@@ -72,9 +69,9 @@ button {
 .property-stage h2,
 .complete-hero h2 {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 6vw, 4.5rem);
-  line-height: 0.95;
+  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+  font-size: clamp(1.75rem, 4.5vw, 3.25rem);
+  line-height: 1.02;
 }
 
 .kicker {
@@ -83,6 +80,25 @@ button {
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.countdown {
+  margin: 4px auto 0;
+  width: min(420px, 100%);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 12px;
+  color: var(--accent);
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.countdown-urgent {
+  color: var(--danger);
+  animation: countdown-pulse 450ms ease-in-out infinite alternate;
 }
 
 .masthead-actions {
@@ -164,7 +180,7 @@ button {
 
 .segmented button[aria-pressed="true"],
 .primary-action {
-  background: #df3d2f;
+  background: var(--accent);
   color: #fffdf5;
 }
 
@@ -195,6 +211,15 @@ input {
 .current-bid {
   margin: 10px 0 0;
   color: var(--muted);
+}
+
+.bid-pop {
+  display: inline-block;
+  margin: 8px 0 0;
+  color: var(--green);
+  font-size: 1.35rem;
+  font-weight: 900;
+  animation: bid-float 700ms ease-out forwards;
 }
 
 .players-panel {
@@ -251,13 +276,17 @@ input {
   display: grid;
   align-content: center;
   gap: 12px;
-  background:
-    repeating-linear-gradient(45deg, rgba(32, 37, 29, 0.06) 0 8px, transparent 8px 16px),
-    var(--paper);
+  background: var(--paper);
 }
 
 .property-stage p {
   margin: 0;
+}
+
+.property-card-wrap {
+  position: relative;
+  width: min(420px, 100%);
+  margin: 0 auto;
 }
 
 .property-card {
@@ -292,8 +321,25 @@ input {
 
 .property-card h2 {
   color: #111;
-  font-size: clamp(1.8rem, 5vw, 3.3rem);
+  font-size: clamp(1.3rem, 4vw, 2rem);
   text-transform: uppercase;
+}
+
+.skipped-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(18, 15, 12, 0.76);
+  color: #fffdf5;
+  font-size: clamp(2.4rem, 9vw, 5.4rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-shadow: 0 4px 0 #000;
+  text-transform: uppercase;
+  transform: rotate(-7deg);
+  z-index: 1;
 }
 
 .deed-label,
@@ -379,6 +425,15 @@ input {
   color: var(--muted);
 }
 
+.bidder-row.is-skipped {
+  opacity: 0.46;
+  filter: grayscale(0.85);
+}
+
+.bidder-row.is-skipped button {
+  cursor: not-allowed;
+}
+
 .silent-row {
   display: grid;
   grid-template-columns: 1fr 110px 110px;
@@ -407,6 +462,10 @@ input {
   gap: 14px;
   background: var(--green);
   color: #fffdf5;
+}
+
+.complete-hero.win-celebration {
+  animation: winner-pulse 700ms ease-out;
 }
 
 .complete-hero p {
@@ -440,6 +499,154 @@ input {
   padding-left: 20px;
 }
 
+.won-property-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.won-property-group h4 {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mini-card-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mini-property-card {
+  width: 108px;
+  min-height: 78px;
+  display: grid;
+  align-content: space-between;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background:
+    linear-gradient(var(--property-color) 0 24px, transparent 24px),
+    var(--paper);
+  color: var(--ink);
+  padding: 28px 8px 8px;
+  text-align: left;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.player-bid-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.money-bid-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(170px, 1.15fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.money-card {
+  display: grid;
+  place-items: center;
+  min-height: 96px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 12px;
+  color: var(--ink);
+  font-weight: 900;
+  text-align: center;
+}
+
+.player-quick-bids {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.skip-bar {
+  width: 100%;
+}
+
+.player-mini-card-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+}
+
+.player-mini-property-card {
+  width: auto;
+  min-height: 76px;
+  pointer-events: none;
+}
+
+.mini-property-card:hover,
+.mini-property-card:focus-visible {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 3px 5px 0 var(--shadow);
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.58);
+  padding: 20px;
+  z-index: 10;
+}
+
+.property-dialog {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  animation: card-pop 220ms ease-out;
+}
+
+@keyframes card-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bid-float {
+  from {
+    opacity: 1;
+    transform: translate(0, 8px);
+  }
+  to {
+    opacity: 0.2;
+    transform: translate(-22px, -24px);
+  }
+}
+
+@keyframes winner-pulse {
+  0% {
+    transform: scale(0.98);
+  }
+  45% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes countdown-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
 @media (max-width: 820px) {
   .masthead {
     align-items: flex-start;
@@ -461,6 +668,10 @@ input {
   }
 
   .silent-row {
+    grid-template-columns: 1fr;
+  }
+
+  .money-bid-row {
     grid-template-columns: 1fr;
   }
 }

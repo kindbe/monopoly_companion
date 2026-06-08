@@ -23,7 +23,7 @@ export default defineConfig({
       reuseExistingServer: false
     },
     {
-      command: "VITE_WS_URL=ws://127.0.0.1:8788 VITE_E2E_COUNTDOWN_SECONDS=1 pnpm exec vite --host 127.0.0.1 --port 5175",
+      command: "VITE_WS_URL=ws://127.0.0.1:8788 VITE_E2E_COUNTDOWN_SECONDS=5 pnpm exec vite --host 127.0.0.1 --port 5175",
       url: "http://127.0.0.1:5175",
       reuseExistingServer: false
     }

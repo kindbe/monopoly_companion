@@ -77,8 +77,8 @@ export const STARTING_CASH = 1500;
 export const QUICK_BID_INCREMENTS = [10, 20, 50, 100] as const;
 
 export const MONOPOLY_PROPERTIES: Property[] = [
-  street("mediterranean-avenue", "Mediterranean Avenue", "Brown", 60, 30, [2, 10, 30, 90, 160, 250], 50),
-  street("baltic-avenue", "Baltic Avenue", "Brown", 60, 30, [4, 20, 60, 180, 320, 450], 50),
+  street("mediterranean-avenue", "Mediterranean Avenue", "Purple", 60, 30, [2, 10, 30, 90, 160, 250], 50),
+  street("baltic-avenue", "Baltic Avenue", "Purple", 60, 30, [4, 20, 60, 180, 320, 450], 50),
   street("oriental-avenue", "Oriental Avenue", "Light Blue", 100, 50, [6, 30, 90, 270, 400, 550], 50),
   street("vermont-avenue", "Vermont Avenue", "Light Blue", 100, 50, [6, 30, 90, 270, 400, 550], 50),
   street("connecticut-avenue", "Connecticut Avenue", "Light Blue", 120, 60, [8, 40, 100, 300, 450, 600], 50),

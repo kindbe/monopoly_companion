@@ -6,6 +6,7 @@ test("host and two players complete a multiplayer bidding session", async ({ bro
   const playerTwo = await browser.newPage();
 
   await host.goto("/");
+  await host.getByLabel(/property count/i).fill("2");
   await host.getByRole("button", { name: /host multiplayer/i }).click();
 
   await expect(host.getByRole("heading", { name: /host lobby/i })).toBeVisible();
@@ -20,26 +21,37 @@ test("host and two players complete a multiplayer bidding session", async ({ bro
 
   await host.getByRole("button", { name: /start multiplayer bidding/i }).click();
 
-  await expect(playerOne.getByRole("heading", { name: /player bidding/i })).toBeVisible();
-  await expect(playerTwo.getByRole("heading", { name: /player bidding/i })).toBeVisible();
+  await expect(playerOne.getByRole("heading", { name: /player bidding/i })).not.toBeVisible();
+  await expect(playerTwo.getByRole("heading", { name: /player bidding/i })).not.toBeVisible();
   await expect(playerOne.getByText(/title deed/i)).toBeVisible();
   await expect(playerOne.getByText(/price: \$/i)).toBeVisible();
   await expect(playerOne.getByText(/mortgage: \$/i)).toBeVisible();
+  await expect(playerOne.getByText(/remaining properties: 2/i)).toBeVisible();
+  await expect(playerOne.getByText(/^5s$/i)).toBeVisible();
 
-  const openingBid = await visibleDollarAmount(playerOne, /current bid: \$(\d+)/i);
   await expect(playerOne.getByRole("button", { name: /^\+\$10$/i })).toBeVisible();
   await expect(playerOne.getByRole("button", { name: /^\+\$20$/i })).toBeVisible();
   await expect(playerOne.getByRole("button", { name: /^\+\$50$/i })).toBeVisible();
   await expect(playerOne.getByRole("button", { name: /^\+\$100$/i })).toBeVisible();
 
+  await playerOne.getByRole("button", { name: /^skip$/i }).click();
+  await expect(playerOne.getByRole("button", { name: /^\+\$10$/i })).toBeDisabled();
+  await playerTwo.getByRole("button", { name: /^skip$/i }).click();
+  await expect(playerOne.locator(".skipped-overlay", { hasText: "Skipped!" })).toBeVisible();
+  await expect(playerTwo.locator(".skipped-overlay", { hasText: "Skipped!" })).toBeVisible();
+  await expect(playerOne.getByText(/remaining properties: 1/i)).toBeVisible();
+
+  const openingBid = await visibleDollarAmount(playerOne, /current bid: \$(\d+)/i);
   await playerOne.getByRole("button", { name: /^\+\$10$/i }).click();
   await playerTwo.getByRole("button", { name: /^skip$/i }).click();
+  await expect(playerTwo.getByRole("button", { name: /^\+\$10$/i })).toBeDisabled();
+  await expect(playerTwo.getByRole("button", { name: /skipped this round/i })).toBeDisabled();
 
   await expect(playerOne.getByText(new RegExp(`your cash: \\$${1500 - openingBid - 10}`, "i"))).toBeVisible();
   await expect(playerOne.getByText(/no properties won/i)).not.toBeVisible();
   await expect(playerTwo.getByText(/your cash: \$1500/i)).toBeVisible();
   await expect(playerTwo.getByText(/Joelle/i)).not.toBeVisible();
-  await expect(host.getByText(/completed bids: 1/i)).toBeVisible();
+  await expect(host.getByText(/completed bids: 2/i)).toBeVisible();
 });
 
 test("theme toggle switches between preferred dark mode and light mode", async ({ page }) => {
