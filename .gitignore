@@ -1,4 +1,5 @@
 .codex/
+.superpowers/
 coverage/
 dist/
 node_modules/
