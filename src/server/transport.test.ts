@@ -13,17 +13,17 @@ describe("WebSocket command transport", () => {
       }
     });
 
-    handler.handle("host", JSON.stringify({ type: "create-session", config: { propertyCount: 1, increment: 10 } }));
+    handler.handle("host", JSON.stringify({ type: "create-session", hostName: "Host", config: { propertyCount: 1, increment: 10 } }));
     handler.handle("joelle-client", JSON.stringify({ type: "join-session", joinCode: "TABLE1", name: "Joelle" }));
     handler.handle("isaac-client", JSON.stringify({ type: "join-session", joinCode: "TABLE1", name: "Isaac" }));
     handler.handle("host", JSON.stringify({ type: "start-bidding", joinCode: "TABLE1" }));
-    const startedState = findLastEvent(sent.get("joelle-client") ?? [], "player-state");
+    const startedState = findLastEvent(sent.get("host") ?? [], "player-state");
     const openingBid = startedState?.type === "player-state" ? startedState.state.currentBid : 0;
-    handler.handle("joelle-client", JSON.stringify({ type: "raise-bid", joinCode: "TABLE1", playerId: "player-1", increment: 10 }));
-    handler.handle("isaac-client", JSON.stringify({ type: "skip-property", joinCode: "TABLE1", playerId: "player-2" }));
+    handler.handle("host", JSON.stringify({ type: "raise-bid", joinCode: "TABLE1", playerId: "player-1", increment: 10 }));
+    handler.handle("joelle-client", JSON.stringify({ type: "skip-property", joinCode: "TABLE1", playerId: "player-2" }));
 
     const hostEvents = sent.get("host") ?? [];
-    const playerEvents = sent.get("joelle-client") ?? [];
+    const playerEvents = sent.get("host") ?? [];
     expect(hostEvents.some((event) => event.type === "host-state" && event.state.joinCode === "TABLE1")).toBe(true);
     expect(playerEvents.some((event) => event.type === "joined" && event.playerId === "player-1")).toBe(true);
     const latestPlayerState = findLastEvent(playerEvents, "player-state");
@@ -31,7 +31,7 @@ describe("WebSocket command transport", () => {
       type: "player-state",
       state: {
         role: "player",
-        player: { id: "player-1", name: "Joelle" },
+        player: { id: "player-1", name: "Host" },
         currentBid: openingBid + 10
       }
     });
@@ -60,7 +60,7 @@ describe("WebSocket command transport", () => {
       }
     });
 
-    handler.handle("host", JSON.stringify({ type: "create-session" }));
+    handler.handle("host", JSON.stringify({ type: "create-session", hostName: "Host" }));
     handler.handle("joelle-client", JSON.stringify({ type: "join-session", joinCode: "TABLE1", name: "Joelle" }));
     handler.disconnect("joelle-client");
 
@@ -68,7 +68,10 @@ describe("WebSocket command transport", () => {
     expect(latestHostState).toMatchObject({
       type: "host-state",
       state: {
-        players: [{ id: "player-1", name: "Joelle", connected: false }]
+        players: [
+          { id: "player-1", name: "Host", connected: true },
+          { id: "player-2", name: "Joelle", connected: false }
+        ]
       }
     });
   });

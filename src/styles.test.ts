@@ -2,14 +2,15 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync("src/styles.css", "utf8");
-const bodyRule = css.match(/body\s*\{[^}]*\}/)?.[0] ?? "";
 
-describe("visual polish styles", () => {
-  it("avoids the dated gradients, diagonal stripes, oversized serif heading, and harsh red action color", () => {
-    expect(css).not.toContain("Georgia");
-    expect(css).not.toContain("Times New Roman");
-    expect(css).not.toContain("repeating-linear-gradient");
-    expect(bodyRule).not.toContain("gradient");
-    expect(css).not.toContain("--accent: #df3d2f");
+describe("Tailwind stylesheet", () => {
+  it("defines app motion keyframes with reduced-motion handling", () => {
+    expect(css).toContain(`@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));`);
+    expect(css).toMatch(/@keyframes app-enter/);
+    expect(css).toMatch(/@keyframes property-reveal/);
+    expect(css).toMatch(/@keyframes bid-pop/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
   });
 });

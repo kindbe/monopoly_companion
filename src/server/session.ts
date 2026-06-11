@@ -35,7 +35,9 @@ type StoreOptions = {
   random?: () => number;
 };
 
-type CreateSessionInput = Partial<SessionConfig>;
+type CreateSessionInput = Partial<SessionConfig> & {
+  hostName: string;
+};
 
 type JoinSessionInput = {
   joinCode: string;
@@ -56,15 +58,20 @@ export function createSessionStore(options: StoreOptions = {}) {
   const codeGenerator = options.codeGenerator ?? createJoinCode;
   const random = options.random ?? Math.random;
 
-  function createSession(input: CreateSessionInput = {}) {
+  function createSession(input: CreateSessionInput) {
+    const hostName = input.hostName.trim();
+    if (!hostName) {
+      throw new Error("Host name is required.");
+    }
     const config = normalizeSessionConfig({ ...DEFAULT_CONFIG, ...input });
     const joinCode = generateUniqueJoinCode(sessions, codeGenerator);
+    const [hostPlayer] = createPlayers([hostName]);
     const session: MultiplayerSession = {
       joinCode,
       phase: "lobby",
       config,
-      players: [],
-      connectedPlayerIds: new Set(),
+      players: [hostPlayer],
+      connectedPlayerIds: new Set([hostPlayer.id]),
       deck: { revealed: [], hidden: [] },
       currentProperty: null,
       openingBid: 0,
@@ -75,7 +82,7 @@ export function createSessionStore(options: StoreOptions = {}) {
     };
 
     sessions.set(joinCode, session);
-    return { joinCode };
+    return { joinCode, playerId: hostPlayer.id };
   }
 
   function joinSession({ joinCode, name }: JoinSessionInput) {

@@ -33,9 +33,10 @@ export function createCommandHandler(store: SessionStore, transport: Transport) 
     try {
       switch (command.type) {
         case "create-session": {
-          const session = store.createSession(command.config);
-          clients.set(clientId, { role: "host", joinCode: session.joinCode });
+          const session = store.createSession({ ...command.config, hostName: command.hostName });
+          clients.set(clientId, { role: "host", joinCode: session.joinCode, playerId: session.playerId });
           ensureSubscribed(session.joinCode);
+          transport.send(clientId, { type: "joined", joinCode: session.joinCode, playerId: session.playerId });
           sendHostState(session.joinCode);
           break;
         }
@@ -103,7 +104,9 @@ export function createCommandHandler(store: SessionStore, transport: Transport) 
         continue;
       }
 
-      if (registration.role === "host") {
+      if (registration.role === "host" && registration.playerId && store.getHostState(joinCode).phase !== "lobby") {
+        sendPlayerState(clientId, joinCode, registration.playerId);
+      } else if (registration.role === "host") {
         sendHostStateToClient(clientId, joinCode);
       } else if (registration.playerId) {
         sendPlayerState(clientId, joinCode, registration.playerId);

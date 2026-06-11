@@ -1,4 +1,4 @@
-import { Gavel, RotateCcw, Shuffle, Trophy } from "lucide-react";
+import { Gavel, Moon, RotateCcw, Shuffle, Sun, Trophy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   assignProperty,
@@ -23,7 +23,7 @@ import {
 import type { HostState, PlayerState, ServerEvent } from "./shared/multiplayer";
 
 type BiddingMode = "ascending" | "silent";
-type Phase = "setup" | "bidding" | "complete" | "hostLobby" | "playerJoin" | "playerBidding";
+type Phase = "landing" | "hostSetup" | "setup" | "bidding" | "complete" | "hostLobby" | "playerJoin" | "playerBidding";
 type Theme = "light" | "dark";
 
 type CompletedBid = {
@@ -34,8 +34,52 @@ type CompletedBid = {
 
 const DEFAULT_PLAYER_NAMES = ["Joelle", "Isaac", "Durd"];
 
+const appShellClass =
+  "mx-auto min-h-screen w-full max-w-7xl bg-[#f7f4ff] px-[18px] text-slate-950 antialiased dark:bg-[#121020] dark:text-violet-50 [font-family:'Avenir_Next','Trebuchet_MS',Verdana,sans-serif]";
+const mastheadClass = "flex justify-end py-2";
+const mastheadTitleClass = "m-0 text-[clamp(1.75rem,4.5vw,3.25rem)] leading-[1.02]";
+const kickerClass = "mb-2 mt-0 text-xs font-extrabold uppercase tracking-normal text-violet-600 dark:text-emerald-300";
+const panelClass =
+  "rounded-lg border border-violet-200/90 bg-white/88 p-4 shadow-[0_16px_38px_rgba(76,58,139,0.10)] ring-1 ring-white/80 transition duration-200 dark:border-violet-400/25 dark:bg-[#1a1730]/92 dark:shadow-[0_18px_44px_rgba(0,0,0,0.28)] dark:ring-white/5";
+const setupGridClass = "grid gap-3.5 md:grid-cols-3";
+const startBandClass =
+  "col-span-full flex flex-col items-stretch justify-between gap-3 rounded-lg border border-violet-200 bg-[linear-gradient(135deg,#ffffff_0%,#f2edff_48%,#e9fbf3_100%)] p-4 shadow-[0_18px_44px_rgba(76,58,139,0.13)] ring-1 ring-white/80 transition duration-200 dark:border-violet-400/25 dark:bg-[linear-gradient(135deg,#1b1732_0%,#151f2d_52%,#10251d_100%)] dark:shadow-[0_18px_44px_rgba(0,0,0,0.30)] dark:ring-white/5 md:flex-row md:items-center";
+const actionRowClass = "flex flex-wrap gap-2.5";
+const buttonBaseClass =
+  "inline-flex min-h-[42px] items-center justify-center gap-2 rounded-md border border-violet-200 px-4 py-2.5 font-extrabold text-slate-950 shadow-[0_8px_20px_rgba(76,58,139,0.08)] transition duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_12px_26px_rgba(76,58,139,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f4ff] active:translate-y-0 disabled:pointer-events-none disabled:opacity-45 dark:border-violet-400/30 dark:text-violet-50 dark:shadow-[0_10px_28px_rgba(0,0,0,0.22)] dark:focus-visible:ring-emerald-300 dark:focus-visible:ring-offset-[#121020]";
+const primaryActionClass = `${buttonBaseClass} border-emerald-500 bg-emerald-500 text-white hover:border-emerald-400 hover:bg-emerald-400 dark:border-emerald-400 dark:bg-emerald-500 dark:text-[#07130f]`;
+const compactPrimaryActionClass = `${primaryActionClass} min-w-0 px-2 sm:px-4`;
+const secondaryActionClass = `${buttonBaseClass} bg-white/90 text-violet-900 hover:bg-violet-50 dark:bg-[#211c3c] dark:text-violet-50 dark:hover:bg-[#2a2350]`;
+const compactSecondaryActionClass = `${secondaryActionClass} min-w-0 px-2 sm:px-4`;
+const themeToggleClass =
+  "inline-grid size-5 place-items-center rounded border border-violet-200 bg-white/90 p-0 text-violet-900 shadow-sm transition duration-200 hover:border-violet-300 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-violet-400/30 dark:bg-[#211c3c] dark:text-violet-50";
+const fieldClass = "my-2.5 grid gap-1.5 font-extrabold";
+const checkRowClass = "my-2.5 grid grid-cols-[auto_1fr] items-center gap-1.5 font-extrabold";
+const inputClass =
+  "min-h-[42px] w-full rounded-md border border-violet-200 bg-white/95 px-2.5 py-2 text-slate-950 shadow-inner shadow-violet-100/40 transition duration-200 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300/50 dark:border-violet-400/30 dark:bg-[#12182a] dark:text-violet-50 dark:shadow-none";
+const finePrintClass = "mt-2.5 text-slate-600 dark:text-violet-200/76";
+const currentBidClass = finePrintClass;
+const biddingLayoutClass = "grid gap-3.5 md:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]";
+const modeButtonClass =
+  "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-violet-200 bg-white/85 px-3 py-2 font-extrabold text-violet-900 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 aria-pressed:border-emerald-400 aria-pressed:bg-emerald-50 aria-pressed:text-emerald-800 dark:border-violet-400/25 dark:bg-[#211c3c] dark:text-violet-50 dark:hover:bg-[#2a2350] dark:aria-pressed:border-emerald-300 dark:aria-pressed:bg-emerald-400/15 dark:aria-pressed:text-emerald-200";
+const checkboxClass = "size-4 accent-emerald-500 transition duration-200";
+const propertyStageClass =
+  "grid min-h-[260px] content-center gap-3 rounded-lg border border-violet-200 bg-[linear-gradient(145deg,#ffffff_0%,#f3efff_52%,#ecfff6_100%)] p-4 shadow-[0_18px_44px_rgba(76,58,139,0.13)] ring-1 ring-white/80 dark:border-violet-400/25 dark:bg-[linear-gradient(145deg,#19172c_0%,#151b2d_52%,#10251d_100%)] dark:shadow-[0_18px_44px_rgba(0,0,0,0.30)] dark:ring-white/5 md:min-h-[420px]";
+const propertyCardClass =
+  "mx-auto w-full max-w-[420px] animate-[property-reveal_360ms_ease-out] overflow-hidden rounded-xl border border-violet-300 bg-white text-slate-950 shadow-[0_18px_36px_rgba(76,58,139,0.16)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_46px_rgba(76,58,139,0.20)] dark:border-violet-400/35 dark:bg-[#f8fbff] dark:text-slate-950";
+const propertyBandClass =
+  "grid min-h-[72px] place-items-center border-b border-violet-200 bg-(--property-color) font-black uppercase text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.45)]";
+const propertyBodyClass = "grid gap-2.5 p-4 text-center";
+const propertyTitleClass = "text-[clamp(1.3rem,4vw,2rem)] uppercase text-[#1b1830]";
+const countdownClassBase =
+  "mx-auto mt-1 w-full max-w-[420px] rounded-lg border border-emerald-200 bg-white/86 p-3 text-center text-3xl font-black tracking-[0.02em] text-emerald-600 shadow-[0_12px_28px_rgba(16,185,129,0.12)] transition duration-200 dark:border-emerald-400/30 dark:bg-[#182437]/90 dark:text-emerald-300";
+
+function cx(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
 export default function App() {
-  const [phase, setPhase] = useState<Phase>("setup");
+  const [phase, setPhase] = useState<Phase>("landing");
   const [mode, setMode] = useState<BiddingMode>("ascending");
   const [includeRailroads, setIncludeRailroads] = useState(false);
   const [includeUtilities, setIncludeUtilities] = useState(false);
@@ -55,6 +99,7 @@ export default function App() {
   const [bidFeedback, setBidFeedback] = useState<{ playerId: string; increment: number } | null>(null);
   const [lastWinnerName, setLastWinnerName] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState("TABLE1");
+  const [hostName, setHostName] = useState("");
   const [playerJoinCode, setPlayerJoinCode] = useState("");
   const [joiningPlayerName, setJoiningPlayerName] = useState("");
   const [joinedPlayerName, setJoinedPlayerName] = useState("");
@@ -244,7 +289,7 @@ export default function App() {
   }
 
   function restart() {
-    setPhase("setup");
+    setPhase("landing");
     setPlayers(createPlayers(DEFAULT_PLAYER_NAMES));
     setCurrentProperty(null);
     setDeck({ revealed: [], hidden: [] });
@@ -253,12 +298,24 @@ export default function App() {
   }
 
   function hostMultiplayer() {
+    setHostName("");
+    setMultiplayerMessage("");
+    setPhase("hostSetup");
+  }
+
+  function createMultiplayerSession() {
+    const nextHostName = hostName.trim();
+    if (!nextHostName) {
+      setMultiplayerMessage("Host name is required.");
+      return;
+    }
     setJoinCode(createLocalJoinCode());
     setPhase("hostLobby");
     connectSocket((socket) => {
       socket.send(
         JSON.stringify({
           type: "create-session",
+          hostName: nextHostName,
           config: {
             includeRailroads,
             includeUtilities,
@@ -297,6 +354,7 @@ export default function App() {
   }
 
   function startMultiplayerBidding() {
+    setMultiplayerMessage("");
     if (socketRef.current?.readyState === WebSocket.OPEN && hostState?.joinCode) {
       socketRef.current.send(JSON.stringify({ type: "start-bidding", joinCode: hostState.joinCode }));
       return;
@@ -359,23 +417,39 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell">
-      <section className="masthead">
-        <div>
-          <p className="kicker">Hidden-deck setup auction</p>
-          <h1>Property Bid Companion</h1>
-        </div>
-        <div className="masthead-actions">
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-          >
-            Switch to {theme === "dark" ? "light" : "dark"} mode
-          </button>
-          <div className="cash-badge">${STARTING_CASH} starting cash</div>
-        </div>
+    <main className={appShellClass}>
+      <section className={mastheadClass}>
+        <button
+          type="button"
+          className={themeToggleClass}
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+        >
+          {theme === "dark" ? <Sun aria-hidden="true" size={14} /> : <Moon aria-hidden="true" size={14} />}
+        </button>
       </section>
+
+      {phase === "landing" ? <LandingScreen hostMultiplayer={hostMultiplayer} joinMultiplayer={joinMultiplayer} /> : null}
+
+      {phase === "hostSetup" ? (
+        <HostSetupScreen
+          hostName={hostName}
+          setHostName={setHostName}
+          includeRailroads={includeRailroads}
+          setIncludeRailroads={setIncludeRailroads}
+          includeUtilities={includeUtilities}
+          setIncludeUtilities={setIncludeUtilities}
+          propertyCount={cappedPropertyCount}
+          setPropertyCount={setPropertyCount}
+          maxProperties={eligiblePool.length}
+          bidDeadline={bidDeadline}
+          setBidDeadline={setBidDeadline}
+          message={multiplayerMessage}
+          createSession={createMultiplayerSession}
+          back={restart}
+        />
+      ) : null}
 
       {phase === "setup" ? (
         <SetupScreen
@@ -443,6 +517,7 @@ export default function App() {
           currentProperty={hostState?.currentProperty?.name ?? null}
           countdownRemaining={hostState?.countdownRemaining ?? 0}
           completedBidCount={hostState?.completedBids.length ?? 0}
+          message={multiplayerMessage}
           startBidding={startMultiplayerBidding}
           restart={restart}
         />
@@ -507,20 +582,21 @@ function SetupScreen(props: {
   message: string;
 }) {
   return (
-    <div className="setup-grid">
-      <section className="panel">
+    <div className={setupGridClass}>
+      <section className={panelClass}>
         <h2>Auction Rules</h2>
-        <div className="segmented" aria-label="Bidding mode">
-          <button type="button" aria-pressed={props.mode === "ascending"} onClick={() => props.setMode("ascending")}>
+        <div className="mb-4 grid grid-cols-2 gap-2" aria-label="Bidding mode">
+          <button type="button" className={modeButtonClass} aria-pressed={props.mode === "ascending"} onClick={() => props.setMode("ascending")}>
             <Gavel size={18} /> Ascending
           </button>
-          <button type="button" aria-pressed={props.mode === "silent"} onClick={() => props.setMode("silent")}>
+          <button type="button" className={modeButtonClass} aria-pressed={props.mode === "silent"} onClick={() => props.setMode("silent")}>
             <Shuffle size={18} /> Silent
           </button>
         </div>
-        <label className="field">
+        <label className={fieldClass}>
           <span>Bid increment</span>
           <input
+            className={inputClass}
             aria-label="Bid increment"
             type="number"
             min={1}
@@ -529,9 +605,10 @@ function SetupScreen(props: {
             onChange={(event) => props.setIncrement(Math.max(1, Number(event.target.value)))}
           />
         </label>
-        <label className="field">
+        <label className={fieldClass}>
           <span>Bid deadline</span>
           <input
+            className={inputClass}
             aria-label="Bid deadline"
             type="number"
             min={5}
@@ -543,27 +620,30 @@ function SetupScreen(props: {
         </label>
       </section>
 
-      <section className="panel">
+      <section className={panelClass}>
         <h2>Property Pool</h2>
-        <label className="check-row">
+        <label className={checkRowClass}>
           <input
+            className={checkboxClass}
             type="checkbox"
             checked={props.includeRailroads}
             onChange={(event) => props.setIncludeRailroads(event.target.checked)}
           />
           Include railroads
         </label>
-        <label className="check-row">
+        <label className={checkRowClass}>
           <input
+            className={checkboxClass}
             type="checkbox"
             checked={props.includeUtilities}
             onChange={(event) => props.setIncludeUtilities(event.target.checked)}
           />
           Include utilities
         </label>
-        <label className="field">
+        <label className={fieldClass}>
           <span>Property count</span>
           <input
+            className={inputClass}
             aria-label="Property count"
             type="number"
             min={1}
@@ -572,39 +652,154 @@ function SetupScreen(props: {
             onChange={(event) => props.setPropertyCount(Number(event.target.value))}
           />
         </label>
-        <p className="fine-print">{props.maxProperties} eligible properties. The reveal list stays hidden.</p>
+        <p className={finePrintClass}>{props.maxProperties} eligible properties. The reveal list stays hidden.</p>
       </section>
 
-      <section className="panel players-panel">
+      <section className={`${panelClass} grid content-start gap-2`}>
         <h2>Players</h2>
         {props.playerNames.map((name, index) => (
-          <div className="player-input" key={index}>
+          <div className="grid grid-cols-[1fr_42px] gap-2" key={index}>
             <input
+              className={inputClass}
               aria-label={`Player ${index + 1} name`}
               value={name}
               onChange={(event) => props.updatePlayerName(index, event.target.value)}
             />
-            <button type="button" onClick={() => props.removePlayer(index)} aria-label={`Remove player ${index + 1}`}>
+            <button className={secondaryActionClass} type="button" onClick={() => props.removePlayer(index)} aria-label={`Remove player ${index + 1}`}>
               -
             </button>
           </div>
         ))}
-        <button type="button" className="secondary-action" onClick={props.addPlayer}>
+        <button type="button" className={secondaryActionClass} onClick={props.addPlayer}>
           Add player
         </button>
       </section>
 
-      <section className="start-band">
+      <section className={startBandClass}>
         {props.message ? <p role="alert">{props.message}</p> : null}
-        <div className="action-row">
-          <button type="button" className="primary-action" onClick={props.startBidding}>
+        <div className={actionRowClass}>
+          <button type="button" className={primaryActionClass} onClick={props.startBidding}>
             <Gavel size={20} /> Start bidding
           </button>
-          <button type="button" className="secondary-action" onClick={props.hostMultiplayer}>
+          <button type="button" className={secondaryActionClass} onClick={props.hostMultiplayer}>
             Host multiplayer
           </button>
-          <button type="button" className="secondary-action" onClick={props.joinMultiplayer}>
+          <button type="button" className={secondaryActionClass} onClick={props.joinMultiplayer}>
             Join session
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function LandingScreen({
+  hostMultiplayer,
+  joinMultiplayer
+}: {
+  hostMultiplayer: () => void;
+  joinMultiplayer: () => void;
+}) {
+  return (
+    <section className={startBandClass}>
+      <div>
+        <p className={kickerClass}>Multiplayer setup</p>
+        <h2>Start a property auction</h2>
+      </div>
+      <div className={actionRowClass}>
+        <button type="button" className={primaryActionClass} onClick={hostMultiplayer}>
+          Host Multiplayer
+        </button>
+        <button type="button" className={secondaryActionClass} onClick={joinMultiplayer}>
+          Join Session
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function HostSetupScreen(props: {
+  hostName: string;
+  setHostName: (name: string) => void;
+  includeRailroads: boolean;
+  setIncludeRailroads: (enabled: boolean) => void;
+  includeUtilities: boolean;
+  setIncludeUtilities: (enabled: boolean) => void;
+  propertyCount: number;
+  setPropertyCount: (count: number) => void;
+  maxProperties: number;
+  bidDeadline: number;
+  setBidDeadline: (seconds: number) => void;
+  message: string;
+  createSession: () => void;
+  back: () => void;
+}) {
+  return (
+    <div className={setupGridClass}>
+      <section className={panelClass}>
+        <h2>Host Multiplayer</h2>
+        <label className={fieldClass}>
+          <span>Host name</span>
+          <input className={inputClass} aria-label="Host name" value={props.hostName} onChange={(event) => props.setHostName(event.target.value)} />
+        </label>
+        <label className={fieldClass}>
+          <span>Bid deadline</span>
+          <input
+            className={inputClass}
+            aria-label="Bid deadline"
+            type="number"
+            min={5}
+            max={30}
+            step={1}
+            value={props.bidDeadline}
+            onChange={(event) => props.setBidDeadline(clampNumber(Number(event.target.value), 5, 30))}
+          />
+        </label>
+      </section>
+
+      <section className={panelClass}>
+        <h2>Property Pool</h2>
+        <label className={checkRowClass}>
+          <input
+            className={checkboxClass}
+            type="checkbox"
+            checked={props.includeRailroads}
+            onChange={(event) => props.setIncludeRailroads(event.target.checked)}
+          />
+          Include railroads
+        </label>
+        <label className={checkRowClass}>
+          <input
+            className={checkboxClass}
+            type="checkbox"
+            checked={props.includeUtilities}
+            onChange={(event) => props.setIncludeUtilities(event.target.checked)}
+          />
+          Include utilities
+        </label>
+        <label className={fieldClass}>
+          <span>Property count</span>
+          <input
+            className={inputClass}
+            aria-label="Property count"
+            type="number"
+            min={1}
+            max={props.maxProperties}
+            value={props.propertyCount}
+            onChange={(event) => props.setPropertyCount(Number(event.target.value))}
+          />
+        </label>
+        <p className={finePrintClass}>{props.maxProperties} eligible properties. The reveal list stays hidden.</p>
+      </section>
+
+      <section className={startBandClass}>
+        {props.message ? <p role="alert">{props.message}</p> : null}
+        <div className={actionRowClass}>
+          <button type="button" className={primaryActionClass} onClick={props.createSession}>
+            Create session
+          </button>
+          <button type="button" className={secondaryActionClass} onClick={props.back}>
+            Back
           </button>
         </div>
       </section>
@@ -638,44 +833,48 @@ function BiddingScreen(props: {
   const ascendingAuction = props.ascendingAuction;
 
   return (
-    <div className="bidding-layout">
-      <section className="property-stage">
-        <p className="kicker">
+    <div className={biddingLayoutClass}>
+      <section className={propertyStageClass}>
+        <p className={kickerClass}>
           Property {props.currentIndex} of {props.totalCount}
         </p>
         <PropertyCard property={props.currentProperty} />
-        <p className="opening-bid">Opening bid: ${calculateOpeningBid(props.currentProperty)}</p>
-        <div className="hidden-strip">
+        <p className="m-0 font-black uppercase tracking-[0.08em]">Opening bid: ${calculateOpeningBid(props.currentProperty)}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
           {props.deck.hidden.map((property) => (
-            <span key={property.id}>Hidden</span>
+            <span className="rounded-md border border-dashed border-emerald-300 bg-emerald-50 px-2.5 py-2 text-xs font-extrabold text-emerald-700 shadow-sm transition duration-200 dark:border-emerald-400/35 dark:bg-emerald-400/10 dark:text-emerald-200" key={property.id}>Hidden</span>
           ))}
         </div>
       </section>
 
-      <section className="panel">
+      <section className={panelClass}>
         <h2>{props.mode === "ascending" ? "Ascending Auction" : props.tiedPlayerIds.length ? "Sudden-Death Re-Bid" : "Silent Auction"}</h2>
         {props.mode === "ascending" && ascendingAuction ? (
           <>
-            <p className="current-bid">Current bid: ${ascendingAuction.currentBid}</p>
+            <p className={currentBidClass}>Current bid: ${ascendingAuction.currentBid}</p>
             {props.bidFeedback ? (
-              <span className="bid-pop" data-testid="bid-pop">
+              <span className="mt-2 inline-block animate-[bid-pop_360ms_ease-out] text-[1.35rem] font-black text-emerald-600 dark:text-emerald-300" data-testid="bid-pop">
                 +${props.bidFeedback.increment}
               </span>
             ) : null}
-            <div className="bidder-list">
+            <div className="grid gap-2.5">
               {props.players.map((player) => (
                 <div
-                  className={`bidder-row ${ascendingAuction.activeBidderIds.includes(player.id) ? "" : "is-skipped"}`}
+                  className={cx(
+                    "grid items-center gap-2 rounded-lg border border-violet-100 bg-white/60 p-2.5 shadow-sm transition duration-200 md:grid-cols-[1fr_auto_auto] dark:border-violet-400/20 dark:bg-white/5",
+                    !ascendingAuction.activeBidderIds.includes(player.id) && "opacity-45 grayscale"
+                  )}
                   data-testid={`bidder-row-${player.id}`}
                   key={player.id}
                 >
-                  <div>
+                  <div className="grid min-w-[130px] gap-0.5">
                     <strong>{player.name}</strong>
-                    <span>${player.remainingCash}</span>
+                    <span className="text-slate-600 dark:text-violet-200/76">${player.remainingCash}</span>
                   </div>
-                  <div className="quick-bids" aria-label={`${player.name} bid increments`}>
+                  <div className="flex flex-wrap gap-1.5" aria-label={`${player.name} bid increments`}>
                     {QUICK_BID_INCREMENTS.map((bidIncrement) => (
                       <button
+                        className={secondaryActionClass}
                         type="button"
                         aria-label={`${player.name} +$${bidIncrement}`}
                         disabled={!ascendingAuction.activeBidderIds.includes(player.id)}
@@ -687,6 +886,7 @@ function BiddingScreen(props: {
                     ))}
                   </div>
                   <button
+                    className={secondaryActionClass}
                     type="button"
                     aria-label={`${player.name} Skip`}
                     disabled={!ascendingAuction.activeBidderIds.includes(player.id)}
@@ -700,13 +900,14 @@ function BiddingScreen(props: {
           </>
         ) : (
           <>
-            <div className="silent-grid">
+            <div className="grid gap-2.5">
               {activeSilentPlayers.map((player) => (
-                <div className="silent-row" key={player.id}>
+                <div className="grid items-end gap-2 rounded-lg border border-violet-100 bg-white/60 p-2.5 shadow-sm transition duration-200 md:grid-cols-[1fr_110px_110px] dark:border-violet-400/20 dark:bg-white/5" key={player.id}>
                   <strong>{player.name}</strong>
-                  <label>
+                  <label className="grid gap-1 text-xs font-extrabold">
                     Opening
                     <input
+                      className={inputClass}
                       type="number"
                       min={0}
                       step={props.increment}
@@ -722,9 +923,10 @@ function BiddingScreen(props: {
                       }
                     />
                   </label>
-                  <label>
+                  <label className="grid gap-1 text-xs font-extrabold">
                     Max
                     <input
+                      className={inputClass}
                       type="number"
                       min={0}
                       step={props.increment}
@@ -743,12 +945,12 @@ function BiddingScreen(props: {
                 </div>
               ))}
             </div>
-            <button type="button" className="primary-action" onClick={props.submitSilentAuction}>
+            <button type="button" className={primaryActionClass} onClick={props.submitSilentAuction}>
               Resolve bids
             </button>
           </>
         )}
-        <button type="button" className="secondary-action" onClick={props.skipProperty}>
+        <button type="button" className={secondaryActionClass} onClick={props.skipProperty}>
           Skip no-bid
         </button>
         {props.message ? <p role="alert">{props.message}</p> : null}
@@ -759,20 +961,20 @@ function BiddingScreen(props: {
 
 function PropertyCard({ property }: { property: Property }) {
   return (
-    <article className="property-card" style={{ "--property-color": propertyAccent(property) } as React.CSSProperties}>
-      <div className="property-color-band">
+    <article className={propertyCardClass} style={{ "--property-color": propertyAccent(property) } as React.CSSProperties}>
+      <div className={propertyBandClass}>
         <span>{property.category === "street" ? property.colorGroup : property.category}</span>
       </div>
-      <div className="property-card-body">
-        <p className="deed-label">Title Deed</p>
-        <h2>{property.name}</h2>
-        <div className="property-stat-row">
+      <div className={propertyBodyClass}>
+        <p className="m-0 font-black uppercase tracking-[0.08em]">Title Deed</p>
+        <h2 className={propertyTitleClass}>{property.name}</h2>
+        <div className="grid grid-cols-2 gap-1.5 font-black">
           <span>Price: ${property.retailValue}</span>
           <span>Mortgage: ${property.mortgage}</span>
         </div>
         {property.category === "street" ? (
           <>
-            <div className="rent-grid" aria-label={`${property.name} rent schedule`}>
+            <div className="grid grid-cols-2 gap-1.5 text-left" aria-label={`${property.name} rent schedule`}>
               <span>Rent ${property.rent[0]}</span>
               <span>1 house ${property.rent[1]}</span>
               <span>2 houses ${property.rent[2]}</span>
@@ -780,12 +982,12 @@ function PropertyCard({ property }: { property: Property }) {
               <span>4 houses ${property.rent[4]}</span>
               <span>Hotel ${property.rent[5]}</span>
             </div>
-            <p className="fine-print">
+            <p className={finePrintClass}>
               Houses ${property.houseCost} each. Hotel ${property.hotelCost} plus 4 houses.
             </p>
           </>
         ) : (
-          <p className="rent-description">{property.rentDescription}</p>
+          <p className="border-t border-[#1b1b18]/25 pt-1.5 font-extrabold">{property.rentDescription}</p>
         )}
       </div>
     </article>
@@ -806,28 +1008,28 @@ function CompleteScreen({
   lastWinnerName: string | null;
 }) {
   return (
-    <div className="complete-layout">
-      <section className={`complete-hero ${lastWinnerName ? "win-celebration" : ""}`}>
+    <div className="grid gap-3.5">
+      <section className="flex items-center gap-3.5 rounded-lg border border-emerald-200 bg-[linear-gradient(135deg,#ecfff6_0%,#f2edff_100%)] p-4 text-slate-950 shadow-[0_18px_44px_rgba(16,185,129,0.14)] ring-1 ring-white/80 dark:border-emerald-400/25 dark:bg-[linear-gradient(135deg,#10251d_0%,#211c3c_100%)] dark:text-violet-50 dark:ring-white/5">
         <Trophy size={34} />
-        <h2>Setup complete</h2>
+        <h2 className={mastheadTitleClass}>Setup complete</h2>
         <p>{completedBids.length} properties resolved.</p>
         {lastWinnerName ? <p>{lastWinnerName} wins!</p> : null}
       </section>
-      <section className="summary-grid">
+      <section className="grid gap-2.5 md:grid-cols-[repeat(auto-fit,minmax(190px,1fr))]">
         {players.map((player) => (
-          <article className="summary-card" key={player.id}>
+          <article className={panelClass} key={player.id}>
             <h3>{player.name}</h3>
-            <p>${player.remainingCash}</p>
+            <p className="mb-2 mt-0 text-2xl font-black">${player.remainingCash}</p>
             {player.properties.length ? (
-              <div className="won-property-groups">
+              <div className="grid gap-3">
                 {groupWonProperties(player.properties).map((group) => (
-                  <section className="won-property-group" key={group.label}>
-                    <h4>{group.label} color group</h4>
-                    <div className="mini-card-row">
+                  <section key={group.label}>
+                    <h4 className="mb-2 mt-0 text-xs font-extrabold uppercase tracking-[0.08em] text-slate-600 dark:text-violet-200/76">{group.label} color group</h4>
+                    <div className="flex flex-wrap gap-2">
                       {group.properties.map((property) => (
                         <button
                           type="button"
-                          className="mini-property-card"
+                          className="grid min-h-[78px] w-[108px] content-between rounded-lg border border-violet-200 bg-[linear-gradient(var(--property-color)_0_24px,transparent_24px),#ffffff] px-2 pb-2 pt-7 text-left text-slate-950 shadow-[0_8px_20px_rgba(76,58,139,0.10)] transition duration-200 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-[0_14px_28px_rgba(76,58,139,0.16)] focus-visible:-translate-y-1 focus-visible:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-violet-400/35 dark:text-slate-950"
                           style={{ "--property-color": propertyAccent(property) } as React.CSSProperties}
                           aria-label={`View ${property.name}`}
                           key={property.id}
@@ -842,12 +1044,12 @@ function CompleteScreen({
                 ))}
               </div>
             ) : (
-              <p className="fine-print">No properties won</p>
+              <p className={finePrintClass}>No properties won</p>
             )}
           </article>
         ))}
       </section>
-      <button type="button" className="secondary-action" onClick={restart}>
+      <button type="button" className={secondaryActionClass} onClick={restart}>
         <RotateCcw size={18} /> New setup
       </button>
     </div>
@@ -856,10 +1058,10 @@ function CompleteScreen({
 
 function PropertyDialog({ property, close }: { property: Property; close: () => void }) {
   return (
-    <div className="dialog-backdrop">
-      <section className="property-dialog" role="dialog" aria-modal="true" aria-label={property.name}>
+    <div className="fixed inset-0 z-10 grid place-items-center bg-violet-950/55 p-5 backdrop-blur-sm">
+      <section className="grid animate-[app-enter_220ms_ease-out] justify-items-center gap-4" role="dialog" aria-modal="true" aria-label={property.name}>
         <PropertyCard property={property} />
-        <button type="button" className="secondary-action" onClick={close}>
+        <button type="button" className={secondaryActionClass} onClick={close}>
           Close
         </button>
       </section>
@@ -874,6 +1076,7 @@ function HostLobbyScreen({
   currentProperty,
   countdownRemaining,
   completedBidCount,
+  message,
   startBidding,
   restart
 }: {
@@ -883,18 +1086,19 @@ function HostLobbyScreen({
   currentProperty: string | null;
   countdownRemaining: number;
   completedBidCount: number;
+  message: string;
   startBidding: () => void;
   restart: () => void;
 }) {
   return (
-    <div className="setup-grid">
-      <section className="panel">
+    <div className={setupGridClass}>
+      <section className={panelClass}>
         <h2>Host Lobby</h2>
-        <p className="kicker">Join code</p>
-        <div className="join-code" data-testid="join-code">{joinCode}</div>
-        <p className="fine-print">Players join from their own browser using this code.</p>
+        <p className={kickerClass}>Join code</p>
+        <div className="rounded-md border border-violet-200 bg-white/95 p-4 text-3xl font-black tracking-[0.08em] text-violet-900 shadow-[0_12px_28px_rgba(76,58,139,0.12)] ring-1 ring-white/80 dark:border-violet-400/30 dark:bg-[#12182a] dark:text-emerald-200 dark:ring-white/5" data-testid="join-code">{joinCode}</div>
+        <p className={finePrintClass}>Players join from their own browser using this code.</p>
       </section>
-      <section className="panel">
+      <section className={panelClass}>
         <h2>Players</h2>
         {players.length ? (
           <ul>
@@ -905,21 +1109,22 @@ function HostLobbyScreen({
             ))}
           </ul>
         ) : (
-          <p className="fine-print">Waiting for players to join.</p>
+          <p className={finePrintClass}>Waiting for players to join.</p>
         )}
         {phase === "bidding" ? (
-          <p className="fine-print">
+          <p className={finePrintClass}>
             {currentProperty ?? "Current property"} with {countdownRemaining}s remaining.
           </p>
         ) : null}
-        {phase === "complete" ? <p className="fine-print">Completed bids: {completedBidCount}</p> : null}
+        {phase === "complete" ? <p className={finePrintClass}>Completed bids: {completedBidCount}</p> : null}
       </section>
-      <section className="start-band">
-        <div className="action-row">
-          <button type="button" className="primary-action" onClick={startBidding}>
+      <section className={startBandClass}>
+        {message ? <p role="alert">{message}</p> : null}
+        <div className={actionRowClass}>
+          <button type="button" className={primaryActionClass} onClick={startBidding}>
             Start multiplayer bidding
           </button>
-          <button type="button" className="secondary-action" onClick={restart}>
+          <button type="button" className={secondaryActionClass} onClick={restart}>
             Back
           </button>
         </div>
@@ -946,22 +1151,22 @@ function PlayerJoinScreen({
   back: () => void;
 }) {
   return (
-    <section className="panel join-panel">
+    <section className={`${panelClass} max-w-[520px]`}>
       <h2>Join Session</h2>
-      <label className="field">
+      <label className={fieldClass}>
         <span>Join code</span>
-        <input aria-label="Join code" value={joinCode} onChange={(event) => setJoinCode(event.target.value)} />
+        <input className={inputClass} aria-label="Join code" value={joinCode} onChange={(event) => setJoinCode(event.target.value)} />
       </label>
-      <label className="field">
+      <label className={fieldClass}>
         <span>Player name</span>
-        <input aria-label="Player name" value={name} onChange={(event) => setName(event.target.value)} />
+        <input className={inputClass} aria-label="Player name" value={name} onChange={(event) => setName(event.target.value)} />
       </label>
       {message ? <p role="alert">{message}</p> : null}
-      <div className="action-row">
-        <button type="button" className="primary-action" onClick={join}>
+      <div className={actionRowClass}>
+        <button type="button" className={primaryActionClass} onClick={join}>
           Join
         </button>
-        <button type="button" className="secondary-action" onClick={back}>
+        <button type="button" className={secondaryActionClass} onClick={back}>
           Back
         </button>
       </div>
@@ -994,28 +1199,41 @@ function PlayerBiddingScreen({
   bid: (bidIncrement: number) => void;
   skip: () => void;
 }) {
-  const countdownClass = countdownRemaining <= 5 && countdownRemaining > 0 ? "countdown countdown-urgent" : "countdown";
+  const countdownClass = cx(
+    countdownClassBase,
+    countdownRemaining <= 5 &&
+      countdownRemaining > 0 &&
+      "animate-[urgent-pulse_900ms_ease-in-out_infinite] border-rose-200 text-rose-600 dark:border-rose-300/35 dark:text-rose-300"
+  );
   return (
-    <div className="bidding-layout">
-      <section className="property-stage">
-        <div className="property-card-wrap">
-          {currentProperty ? <PropertyCard property={currentProperty} /> : <p>Current property</p>}
-          {roundMessage === "Skipped!" ? <div className="skipped-overlay">Skipped!</div> : null}
+    <div className={biddingLayoutClass}>
+      <section className={propertyStageClass}>
+        <div className="relative mx-auto w-full max-w-[420px]">
+          {currentProperty ? <PropertyCard property={currentProperty} /> : null}
+          {roundMessage === "Skipped!" ? (
+            <div
+              className="absolute inset-0 z-[1] grid animate-[overlay-in_220ms_ease-out] rotate-[-7deg] place-items-center rounded-xl bg-violet-950/75 text-[clamp(2.4rem,9vw,5.4rem)] font-black uppercase tracking-[0.06em] text-white backdrop-blur-[2px] [text-shadow:0_4px_0_rgba(0,0,0,0.45)]"
+              data-testid="skipped-overlay"
+            >
+              Skipped!
+            </div>
+          ) : null}
         </div>
         <p className={countdownClass}>{countdownRemaining}s</p>
         <p>Remaining properties: {remainingPropertyCount}</p>
       </section>
-      <section className="panel player-bid-panel">
-        <h2>{playerName}</h2>
+      <section className={`${panelClass} grid content-start gap-3`}>
         {roundMessage ? <p role="status">{roundMessage}</p> : null}
-        <p className="current-bid">Current bid: ${currentBid}</p>
-        <div className="money-bid-row">
-          <p className="current-bid money-card">Your cash: ${remainingCash}</p>
-          <div className="player-quick-bids">
+        <p className={currentBidClass}>Current bid: ${currentBid}</p>
+        <div className="grid items-stretch gap-2.5 md:grid-cols-[minmax(150px,1fr)_minmax(170px,1.15fr)]">
+          <p className="mt-2.5 grid min-h-24 place-items-center rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-center font-black text-emerald-800 shadow-inner shadow-emerald-100/60 transition duration-200 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200 dark:shadow-none">
+            Your cash: ${remainingCash} / ${STARTING_CASH}
+          </p>
+          <div className="grid grid-cols-2 gap-2 [&>button]:min-w-0" data-testid="player-quick-bids">
             {QUICK_BID_INCREMENTS.map((bidIncrement) => (
               <button
                 type="button"
-                className="primary-action"
+                className={compactPrimaryActionClass}
                 disabled={hasSkipped}
                 key={bidIncrement}
                 onClick={() => bid(bidIncrement)}
@@ -1025,11 +1243,11 @@ function PlayerBiddingScreen({
             ))}
           </div>
         </div>
-        <button type="button" className="secondary-action skip-bar" disabled={hasSkipped} onClick={skip}>
+        <button type="button" className={`${compactSecondaryActionClass} w-full`} disabled={hasSkipped} onClick={skip}>
           {hasSkipped ? "Skipped this round" : "Skip"}
         </button>
         <h3>Your properties</h3>
-        {wonProperties.length ? <MiniPropertyCards properties={wonProperties} /> : <p className="fine-print">No properties won</p>}
+        {wonProperties.length ? <MiniPropertyCards properties={wonProperties} /> : <p className={finePrintClass}>No properties won</p>}
       </section>
     </div>
   );
@@ -1037,11 +1255,12 @@ function PlayerBiddingScreen({
 
 function MiniPropertyCards({ properties }: { properties: Property[] }) {
   return (
-    <div className="mini-card-row player-mini-card-row">
+    <div className="grid grid-cols-[repeat(4,minmax(92px,1fr))] gap-2">
       {sortPropertiesByDisplayValue(properties).map((property) => (
         <div
-          className="mini-property-card player-mini-property-card"
-          style={{ "--property-color": propertyAccent(property) } as React.CSSProperties}
+          className="pointer-events-none grid min-h-[76px] content-between rounded-lg border border-violet-200 bg-white px-2 pb-2 pt-7 text-left text-slate-950 shadow-[0_8px_20px_rgba(76,58,139,0.10)] transition duration-200 dark:border-violet-400/35 dark:bg-white dark:text-slate-950"
+          data-testid="mini-property-card"
+          style={miniPropertyCardStyle(property)}
           key={property.id}
         >
           <span>{property.name}</span>
@@ -1049,6 +1268,15 @@ function MiniPropertyCards({ properties }: { properties: Property[] }) {
       ))}
     </div>
   );
+}
+
+function miniPropertyCardStyle(property: Property) {
+  const accent = propertyAccent(property);
+  return {
+    "--property-color": accent,
+    backgroundColor: "#ffffff",
+    backgroundImage: `linear-gradient(${accent} 0 24px, transparent 24px)`
+  } as React.CSSProperties;
 }
 
 function createLocalJoinCode() {
@@ -1074,16 +1302,34 @@ export function countdownTickDelay(remainingSeconds: number) {
 }
 
 function playSound(kind: "bid" | "win" | "tick") {
-  if (typeof Audio === "undefined") {
-    return;
+  try {
+    playTone(kind);
+  } catch {
+    // Sound is best-effort; blocked or unsupported audio should never affect bidding.
   }
-  const audio = new Audio(soundDataUri(kind));
-  void audio.play?.();
 }
 
-function soundDataUri(kind: "bid" | "win" | "tick") {
-  const tone = kind === "win" ? "win" : kind === "tick" ? "tick" : "bid";
-  return `data:audio/wav;base64,${btoa(tone)}`;
+function playTone(kind: "bid" | "win" | "tick") {
+  const audioWindow = window as typeof window & { webkitAudioContext?: typeof AudioContext };
+  const AudioContextConstructor = audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+  if (!AudioContextConstructor) {
+    return;
+  }
+  const audioContext = new AudioContextConstructor();
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const now = audioContext.currentTime;
+  const duration = kind === "win" ? 0.18 : kind === "tick" ? 0.035 : 0.08;
+
+  oscillator.type = "sine";
+  oscillator.frequency.value = kind === "win" ? 660 : kind === "tick" ? 880 : 440;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(kind === "tick" ? 0.025 : 0.06, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + duration);
 }
 
 function initialTheme(): Theme {

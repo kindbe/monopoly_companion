@@ -50,7 +50,7 @@ export type PlayerState = {
 };
 
 export type ClientCommand =
-  | { type: "create-session"; config?: Partial<SessionConfig> }
+  | { type: "create-session"; hostName: string; config?: Partial<SessionConfig> }
   | { type: "join-session"; joinCode: string; name: string }
   | { type: "start-bidding"; joinCode: string }
   | { type: "submit-bid"; joinCode: string; playerId: string; amount: number }
