@@ -21,6 +21,9 @@ import {
   type SilentBid
 } from "./domain/bidding";
 import type { HostState, PlayerState, ServerEvent } from "./shared/multiplayer";
+import { browserSupportsWebRtc, chooseMultiplayerMode } from "./shared/multiplayerMode";
+import { createBrowserWebRtcMultiplayerTransport } from "./shared/browserWebRtcMultiplayerTransport";
+import { createWebSocketMultiplayerTransport, type MultiplayerTransport } from "./shared/multiplayerTransport";
 
 type BiddingMode = "ascending" | "silent";
 type Phase = "landing" | "hostSetup" | "setup" | "bidding" | "complete" | "hostLobby" | "playerJoin" | "playerBidding";
@@ -52,7 +55,7 @@ const compactPrimaryActionClass = `${primaryActionClass} min-w-0 px-2 sm:px-4`;
 const secondaryActionClass = `${buttonBaseClass} bg-white/90 text-violet-900 hover:bg-violet-50 dark:bg-[#211c3c] dark:text-violet-50 dark:hover:bg-[#2a2350]`;
 const compactSecondaryActionClass = `${secondaryActionClass} min-w-0 px-2 sm:px-4`;
 const themeToggleClass =
-  "inline-grid size-5 place-items-center rounded border border-violet-200 bg-white/90 p-0 text-violet-900 shadow-sm transition duration-200 hover:border-violet-300 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-violet-400/30 dark:bg-[#211c3c] dark:text-violet-50";
+  "inline-grid size-5 place-items-center p-0 text-violet-900 transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:text-violet-50";
 const fieldClass = "my-2.5 grid gap-1.5 font-extrabold";
 const checkRowClass = "my-2.5 grid grid-cols-[auto_1fr] items-center gap-1.5 font-extrabold";
 const inputClass =
@@ -109,7 +112,7 @@ export default function App() {
   const [localCountdownRemaining, setLocalCountdownRemaining] = useState(30);
   const [theme, setTheme] = useState<Theme>(() => initialTheme());
   const playerIdRef = useRef<string | null>(null);
-  const socketRef = useRef<WebSocket | null>(null);
+  const transportRef = useRef<MultiplayerTransport | null>(null);
 
   const eligiblePool = buildEligiblePropertyPool({ includeRailroads, includeUtilities });
   const cappedPropertyCount = Math.min(propertyCount, eligiblePool.length);
@@ -311,20 +314,16 @@ export default function App() {
     }
     setJoinCode(createLocalJoinCode());
     setPhase("hostLobby");
-    connectSocket((socket) => {
-      socket.send(
-        JSON.stringify({
-          type: "create-session",
-          hostName: nextHostName,
-          config: {
-            includeRailroads,
-            includeUtilities,
-            propertyCount: cappedPropertyCount,
-            increment,
-            countdownSeconds: e2eCountdownSeconds() ?? bidDeadline
-          }
-        })
-      );
+    const transport = connectTransport();
+    transport?.createSession({
+      hostName: nextHostName,
+      config: {
+        includeRailroads,
+        includeUtilities,
+        propertyCount: cappedPropertyCount,
+        increment,
+        countdownSeconds: e2eCountdownSeconds() ?? bidDeadline
+      }
     });
   }
 
@@ -344,9 +343,7 @@ export default function App() {
     const nextName = joiningPlayerName.trim();
     const nextJoinCode = playerJoinCode.trim().toUpperCase();
 
-    connectSocket((socket) => {
-      socket.send(JSON.stringify({ type: "join-session", joinCode: nextJoinCode, name: nextName }));
-    });
+    connectTransport()?.joinSession({ joinCode: nextJoinCode, name: nextName });
 
     setJoinedPlayerName(nextName);
     setMultiplayerMessage("");
@@ -355,65 +352,77 @@ export default function App() {
 
   function startMultiplayerBidding() {
     setMultiplayerMessage("");
-    if (socketRef.current?.readyState === WebSocket.OPEN && hostState?.joinCode) {
-      socketRef.current.send(JSON.stringify({ type: "start-bidding", joinCode: hostState.joinCode }));
+    if (transportRef.current?.isOpen() && hostState?.joinCode) {
+      transportRef.current.startBidding(hostState.joinCode);
       return;
     }
     setPhase("setup");
   }
 
   function submitMultiplayerBid(bidIncrement: number) {
-    if (!playerState || !playerIdRef.current || socketRef.current?.readyState !== WebSocket.OPEN) {
+    if (!playerState || !playerIdRef.current || !transportRef.current?.isOpen()) {
       return;
     }
-    socketRef.current.send(
-      JSON.stringify({
-        type: "raise-bid",
-        joinCode: playerState.joinCode,
-        playerId: playerIdRef.current,
-        increment: bidIncrement
-      })
-    );
+    transportRef.current.raiseBid({
+      joinCode: playerState.joinCode,
+      playerId: playerIdRef.current,
+      increment: bidIncrement
+    });
   }
 
   function skipMultiplayerProperty() {
-    if (!playerState || !playerIdRef.current || socketRef.current?.readyState !== WebSocket.OPEN) {
+    if (!playerState || !playerIdRef.current || !transportRef.current?.isOpen()) {
       return;
     }
-    socketRef.current.send(
-      JSON.stringify({
-        type: "skip-property",
-        joinCode: playerState.joinCode,
-        playerId: playerIdRef.current
-      })
-    );
+    transportRef.current.skipProperty({
+      joinCode: playerState.joinCode,
+      playerId: playerIdRef.current
+    });
   }
 
-  function connectSocket(onOpen: (socket: WebSocket) => void) {
-    if (typeof WebSocket === "undefined") {
-      return;
-    }
-
-    const socket = new WebSocket(webSocketUrl());
-    socketRef.current = socket;
-    socket.addEventListener("open", () => onOpen(socket));
-    socket.addEventListener("message", (event) => {
-      const serverEvent = JSON.parse(String(event.data)) as ServerEvent;
-      if (serverEvent.type === "host-state") {
-        setHostState(serverEvent.state);
-        setJoinCode(serverEvent.state.joinCode);
-      }
-      if (serverEvent.type === "joined") {
-        playerIdRef.current = serverEvent.playerId;
-      }
-      if (serverEvent.type === "player-state") {
-        setPlayerState(serverEvent.state);
-        setPhase("playerBidding");
-      }
-      if (serverEvent.type === "error") {
-        setMultiplayerMessage(serverEvent.message);
-      }
+  function connectTransport() {
+    const mode = chooseMultiplayerMode({
+      requestedMode: import.meta.env.VITE_MULTIPLAYER_TRANSPORT,
+      hasWebRtc: browserSupportsWebRtc(),
+      hasWebSocket: typeof WebSocket !== "undefined"
     });
+
+    if (mode === "unavailable") {
+      setMultiplayerMessage("This browser does not support multiplayer connections.");
+      return null;
+    }
+    const handleEvent = (serverEvent: Parameters<typeof handleMultiplayerEvent>[0]) => handleMultiplayerEvent(serverEvent);
+    const transport =
+      mode === "webrtc"
+        ? createBrowserWebRtcMultiplayerTransport({
+            signalingUrl: webSocketUrl(),
+            onEvent: handleEvent,
+            onError: setMultiplayerMessage
+          })
+        : createWebSocketMultiplayerTransport({
+            url: webSocketUrl(),
+            onEvent: handleEvent
+          });
+    transportRef.current = transport;
+    transport.connect();
+    return transport;
+  }
+
+  function handleMultiplayerEvent(serverEvent: ServerEvent) {
+    if (serverEvent.type === "host-state") {
+      setHostState(serverEvent.state);
+      setJoinCode(serverEvent.state.joinCode);
+    }
+    if (serverEvent.type === "joined") {
+      playerIdRef.current = serverEvent.playerId;
+    }
+    if (serverEvent.type === "player-state") {
+      setPlayerState(serverEvent.state);
+      setPhase("playerBidding");
+    }
+    if (serverEvent.type === "error") {
+      setMultiplayerMessage(serverEvent.message);
+    }
   }
 
   return (
@@ -867,7 +876,7 @@ function BiddingScreen(props: {
                   data-testid={`bidder-row-${player.id}`}
                   key={player.id}
                 >
-                  <div className="grid min-w-[130px] gap-0.5">
+                  <div className="grid min-w-32.5 gap-0.5">
                     <strong>{player.name}</strong>
                     <span className="text-slate-600 dark:text-violet-200/76">${player.remainingCash}</span>
                   </div>
@@ -1029,7 +1038,7 @@ function CompleteScreen({
                       {group.properties.map((property) => (
                         <button
                           type="button"
-                          className="grid min-h-[78px] w-[108px] content-between rounded-lg border border-violet-200 bg-[linear-gradient(var(--property-color)_0_24px,transparent_24px),#ffffff] px-2 pb-2 pt-7 text-left text-slate-950 shadow-[0_8px_20px_rgba(76,58,139,0.10)] transition duration-200 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-[0_14px_28px_rgba(76,58,139,0.16)] focus-visible:-translate-y-1 focus-visible:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-violet-400/35 dark:text-slate-950"
+                          className="grid min-h-19.5 w-27 content-between rounded-lg border border-violet-200 bg-[linear-gradient(var(--property-color)_0_24px,transparent_24px),#ffffff] px-2 pb-2 pt-7 text-left text-slate-950 shadow-[0_8px_20px_rgba(76,58,139,0.10)] transition duration-200 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-[0_14px_28px_rgba(76,58,139,0.16)] focus-visible:-translate-y-1 focus-visible:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:border-violet-400/35 dark:text-slate-950"
                           style={{ "--property-color": propertyAccent(property) } as React.CSSProperties}
                           aria-label={`View ${property.name}`}
                           key={property.id}
@@ -1151,7 +1160,7 @@ function PlayerJoinScreen({
   back: () => void;
 }) {
   return (
-    <section className={`${panelClass} max-w-[520px]`}>
+    <section className={`${panelClass} max-w-130`}>
       <h2>Join Session</h2>
       <label className={fieldClass}>
         <span>Join code</span>
@@ -1208,11 +1217,11 @@ function PlayerBiddingScreen({
   return (
     <div className={biddingLayoutClass}>
       <section className={propertyStageClass}>
-        <div className="relative mx-auto w-full max-w-[420px]">
+        <div className="relative mx-auto w-full max-w-105">
           {currentProperty ? <PropertyCard property={currentProperty} /> : null}
           {roundMessage === "Skipped!" ? (
             <div
-              className="absolute inset-0 z-[1] grid animate-[overlay-in_220ms_ease-out] rotate-[-7deg] place-items-center rounded-xl bg-violet-950/75 text-[clamp(2.4rem,9vw,5.4rem)] font-black uppercase tracking-[0.06em] text-white backdrop-blur-[2px] [text-shadow:0_4px_0_rgba(0,0,0,0.45)]"
+              className="absolute inset-0 z-1 grid animate-[overlay-in_220ms_ease-out] rotate-[-7deg] place-items-center rounded-xl bg-violet-950/75 text-[clamp(2.4rem,9vw,5.4rem)] font-black uppercase tracking-[0.06em] text-white backdrop-blur-[2px] [text-shadow:0_4px_0_rgba(0,0,0,0.45)]"
               data-testid="skipped-overlay"
             >
               Skipped!
@@ -1258,7 +1267,7 @@ function MiniPropertyCards({ properties }: { properties: Property[] }) {
     <div className="grid grid-cols-[repeat(4,minmax(92px,1fr))] gap-2">
       {sortPropertiesByDisplayValue(properties).map((property) => (
         <div
-          className="pointer-events-none grid min-h-[76px] content-between rounded-lg border border-violet-200 bg-white px-2 pb-2 pt-7 text-left text-slate-950 shadow-[0_8px_20px_rgba(76,58,139,0.10)] transition duration-200 dark:border-violet-400/35 dark:bg-white dark:text-slate-950"
+          className="pointer-events-none grid min-h-19 content-between rounded-lg border border-violet-200 bg-white px-2 pb-2 pt-7 text-left text-slate-950 shadow-[0_8px_20px_rgba(76,58,139,0.10)] transition duration-200 dark:border-violet-400/35 dark:bg-white dark:text-slate-950"
           data-testid="mini-property-card"
           style={miniPropertyCardStyle(property)}
           key={property.id}
