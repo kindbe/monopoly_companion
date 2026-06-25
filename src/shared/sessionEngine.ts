@@ -26,6 +26,8 @@ type MultiplayerSession = {
   openingBid: number;
   roundEndsAt: number | null;
   roundActions: Map<string, RoundAction>;
+  roundSkippedPlayerIds: Set<string>;
+  roundBidCounts: Map<string, number>;
   roundMessage: string | null;
   completedBids: CompletedBid[];
 };
@@ -49,7 +51,8 @@ const DEFAULT_CONFIG: SessionConfig = {
   includeUtilities: false,
   propertyCount: 10,
   increment: 10,
-  countdownSeconds: 10
+  countdownSeconds: 10,
+  maxBidsPerPlayer: 3
 };
 
 export function createSessionEngine(options: StoreOptions = {}) {
@@ -77,6 +80,8 @@ export function createSessionEngine(options: StoreOptions = {}) {
       openingBid: 0,
       roundEndsAt: null,
       roundActions: new Map(),
+      roundSkippedPlayerIds: new Set(),
+      roundBidCounts: new Map(),
       roundMessage: null,
       completedBids: []
     };
@@ -137,14 +142,18 @@ export function createSessionEngine(options: StoreOptions = {}) {
   }) {
     const session = getActiveBiddingSession(joinCode, now);
     const player = getPlayer(session, playerId);
-    if (session.roundActions.get(playerId)?.kind === "skip") {
+    if (session.roundSkippedPlayerIds.has(playerId)) {
       throw new Error("Skipped players cannot bid again this round.");
     }
     validateBidAmount(amount, player.remainingCash, session.config.increment);
     if (amount <= currentBid(session)) {
       throw new Error("Bid must exceed the current bid.");
     }
+    if (remainingBidCount(session, playerId) <= 0) {
+      throw new Error("No bids remaining for this property.");
+    }
 
+    session.roundBidCounts.set(playerId, bidCount(session, playerId) + 1);
     session.roundActions.set(playerId, { kind: "bid", amount });
     notify(joinCode);
   }
@@ -167,7 +176,7 @@ export function createSessionEngine(options: StoreOptions = {}) {
   function skipProperty({ joinCode, playerId, now = Date.now() }: { joinCode: string; playerId: string; now?: number }) {
     const session = getActiveBiddingSession(joinCode, now);
     getPlayer(session, playerId);
-    session.roundActions.set(playerId, { kind: "skip" });
+    session.roundSkippedPlayerIds.add(playerId);
     if (allPlayersSkipped(session)) {
       resolveCurrentRound(session, now, "Skipped!");
     }
@@ -257,7 +266,8 @@ export function createSessionEngine(options: StoreOptions = {}) {
 function normalizeSessionConfig(config: SessionConfig): SessionConfig {
   return {
     ...config,
-    countdownSeconds: clampWholeNumber(config.countdownSeconds, 5, 30)
+    countdownSeconds: clampWholeNumber(config.countdownSeconds, 5, 30),
+    maxBidsPerPlayer: clampWholeNumber(config.maxBidsPerPlayer, 1, 5)
   };
 }
 
@@ -274,6 +284,8 @@ function revealNextRound(session: MultiplayerSession, now: number) {
   session.currentProperty = revealed.property;
   session.openingBid = revealed.property ? calculateOpeningBid(revealed.property) : 0;
   session.roundActions = new Map();
+  session.roundSkippedPlayerIds = new Set();
+  session.roundBidCounts = new Map();
 
   if (!revealed.property) {
     session.phase = "complete";
@@ -320,6 +332,7 @@ function serializeHostState(session: MultiplayerSession): HostState {
     })),
     currentProperty: session.currentProperty,
     currentBid: currentBid(session),
+    currentBidderName: currentBidderName(session),
     openingBid: session.openingBid,
     remainingPropertyCount: remainingPropertyCount(session),
     countdownRemaining: countdownRemaining(session),
@@ -337,10 +350,12 @@ function serializePlayerState(session: MultiplayerSession, playerId: string): Pl
     phase: session.phase,
     currentProperty: session.currentProperty,
     currentBid: currentBid(session),
+    currentBidderName: currentBidderName(session),
     openingBid: session.openingBid,
     remainingPropertyCount: remainingPropertyCount(session),
     countdownRemaining: countdownRemaining(session),
-    hasSkipped: session.roundActions.get(playerId)?.kind === "skip",
+    remainingBidCount: remainingBidCount(session, playerId),
+    hasSkipped: session.roundSkippedPlayerIds.has(playerId),
     roundMessage: session.roundMessage,
     player
   };
@@ -355,6 +370,28 @@ function currentBid(session: MultiplayerSession) {
   );
 }
 
+function currentBidderName(session: MultiplayerSession) {
+  const highestBid = [...session.roundActions.entries()]
+    .filter(([, action]) => action.kind === "bid")
+    .map(([playerId, action]) => ({
+      playerId,
+      amount: action.kind === "bid" ? action.amount : 0
+    }))
+    .sort((left, right) => right.amount - left.amount)[0];
+  if (!highestBid) {
+    return null;
+  }
+  return session.players.find((player) => player.id === highestBid.playerId)?.name ?? null;
+}
+
+function bidCount(session: MultiplayerSession, playerId: string) {
+  return session.roundBidCounts.get(playerId) ?? 0;
+}
+
+function remainingBidCount(session: MultiplayerSession, playerId: string) {
+  return Math.max(0, session.config.maxBidsPerPlayer - bidCount(session, playerId));
+}
+
 function remainingPropertyCount(session: MultiplayerSession) {
   return (session.currentProperty ? 1 : 0) + session.deck.hidden.length;
 }
@@ -367,7 +404,11 @@ function countdownRemaining(session: MultiplayerSession, now = Date.now()) {
 }
 
 function allPlayersSkipped(session: MultiplayerSession) {
-  return session.players.length > 0 && session.players.every((player) => session.roundActions.get(player.id)?.kind === "skip");
+  return (
+    session.roundActions.size === 0 &&
+    session.players.length > 0 &&
+    session.players.every((player) => session.roundSkippedPlayerIds.has(player.id))
+  );
 }
 
 function generateUniqueJoinCode(sessions: Map<string, MultiplayerSession>, generator: () => string) {

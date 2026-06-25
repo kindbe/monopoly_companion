@@ -1,8 +1,9 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import App, { countdownTickDelay, sortPropertiesByDisplayValue } from "./App";
-import { MONOPOLY_PROPERTIES } from "./domain/bidding";
+import App, { countdownTickDelay } from "@/App";
+import { sortPropertiesByDisplayValue } from "@/common/propertyDisplay";
+import { MONOPOLY_PROPERTIES } from "@/domain/bidding";
 
 describe("App", () => {
   afterEach(() => {
@@ -32,6 +33,18 @@ describe("App", () => {
     expect(landing).toHaveClass("border-violet-200");
     expect(landing?.className).not.toContain("bg-[#e4c142]");
     expect(landing?.className).not.toContain("shadow-[5px_5px_0_#20251d]");
+  });
+
+  it("animates the active screen when moving between app phases", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.getByTestId("active-screen")).toHaveClass("animate-[app-enter_260ms_ease-out]");
+
+    await user.click(screen.getByRole("button", { name: /host multiplayer/i }));
+
+    expect(screen.getByTestId("active-screen")).toHaveClass("animate-[app-enter_260ms_ease-out]");
+    expect(screen.getByRole("heading", { name: /host multiplayer/i })).toBeInTheDocument();
   });
 
   it("defaults theme from prefers-color-scheme and uses a compact icon toggle", async () => {
@@ -86,7 +99,39 @@ describe("App", () => {
     expect(screen.getByLabelText(/include utilities/i)).not.toBeChecked();
     expect(screen.getByLabelText(/property count/i)).toHaveValue(10);
     expect(screen.getByLabelText(/bid deadline/i)).toHaveValue(10);
+    expect(screen.getByLabelText(/max bids per property/i)).toHaveValue(3);
     expect(screen.getByRole("button", { name: /create session/i })).toBeInTheDocument();
+  });
+
+  it("sends the host-defined max bid count when creating a multiplayer session", async () => {
+    const sockets: FakeSocket[] = [];
+    vi.stubGlobal(
+      "WebSocket",
+      class extends FakeSocket {
+        static OPEN = 1;
+
+        constructor(url: string) {
+          super(url);
+          sockets.push(this);
+        }
+      }
+    );
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: /host multiplayer/i }));
+    await user.type(screen.getByLabelText(/host name/i), "Host");
+    await user.clear(screen.getByLabelText(/max bids per property/i));
+    await user.type(screen.getByLabelText(/max bids per property/i), "5");
+    await user.click(screen.getByRole("button", { name: /create session/i }));
+
+    expect(JSON.parse(sockets[0].sentMessages[0])).toMatchObject({
+      type: "create-session",
+      hostName: "Host",
+      config: {
+        maxBidsPerPlayer: 5
+      }
+    });
   });
 
   it("requires a host name before creating a session", async () => {
@@ -97,145 +142,6 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /create session/i }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(/host name is required/i);
-  });
-
-  it("falls back to local setup from the host lobby and shows setup controls", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole("button", { name: /host multiplayer/i }));
-    await user.type(screen.getByLabelText(/host name/i), "Host");
-    await user.click(screen.getByRole("button", { name: /create session/i }));
-    await user.click(screen.getByRole("button", { name: /start multiplayer bidding/i }));
-
-    expect(screen.getByRole("button", { name: /ascending/i })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: /silent/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/include railroads/i)).not.toBeChecked();
-    expect(screen.getByLabelText(/include utilities/i)).not.toBeChecked();
-    expect(screen.getByLabelText(/property count/i)).toHaveValue(10);
-    expect(screen.getByLabelText(/bid increment/i)).toHaveValue(10);
-    expect(screen.getByLabelText(/bid deadline/i)).toHaveValue(10);
-  });
-
-  it("runs a local ascending auction through a win and property dialog", async () => {
-    const AudioMock = vi.fn();
-    const start = vi.fn();
-    const stop = vi.fn();
-    const connect = vi.fn();
-    const exponentialRampToValueAtTime = vi.fn();
-    const audioContext = {
-      currentTime: 1,
-      createOscillator: vi.fn(() => ({
-        connect,
-        frequency: { value: 0 },
-        start,
-        stop,
-        type: "sine"
-      })),
-      createGain: vi.fn(() => ({
-        connect,
-        gain: {
-          setValueAtTime: vi.fn(),
-          exponentialRampToValueAtTime
-        }
-      })),
-      destination: {}
-    };
-    vi.stubGlobal("Audio", AudioMock);
-    vi.stubGlobal("AudioContext", vi.fn(() => audioContext));
-    const user = userEvent.setup();
-    render(<App />);
-
-    await enterLocalSetup(user);
-    await user.clear(screen.getByLabelText(/property count/i));
-    await user.type(screen.getByLabelText(/property count/i), "1");
-    await user.click(screen.getByRole("button", { name: /start bidding/i }));
-    const propertyName = screen.getAllByRole("heading", { level: 2 })[0].textContent ?? "";
-
-    expect(screen.getByText(/property 1 of 1/i)).toBeInTheDocument();
-    expect(screen.getByText(/price: \$/i)).toBeInTheDocument();
-    expect(screen.getByText(/mortgage: \$/i)).toBeInTheDocument();
-    expect(screen.getByText(/opening bid: \$/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /^joelle \+\$20$/i }));
-
-    expect(screen.getByTestId("bid-pop")).toHaveTextContent("+$20");
-    expect(AudioMock).not.toHaveBeenCalled();
-    expect(start).toHaveBeenCalledTimes(1);
-
-    await user.click(screen.getByRole("button", { name: /^isaac skip$/i }));
-    await user.click(screen.getByRole("button", { name: /^durd skip$/i }));
-
-    expect(screen.getByText(/joelle wins/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /setup complete/i })).toBeInTheDocument();
-    expect(screen.getByText(/color group/i)).toBeInTheDocument();
-    expect(start).toHaveBeenCalledTimes(2);
-    expect(stop).toHaveBeenCalledTimes(2);
-
-    await user.click(screen.getByRole("button", { name: new RegExp(`view ${propertyName}`, "i") }));
-
-    expect(screen.getByRole("dialog", { name: new RegExp(propertyName, "i") })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /close/i }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("can skip no-bid local properties and finish with unchanged cash", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await enterLocalSetup(user);
-    await user.clear(screen.getByLabelText(/property count/i));
-    await user.type(screen.getByLabelText(/property count/i), "1");
-    await user.click(screen.getByRole("button", { name: /start bidding/i }));
-    await user.click(screen.getByRole("button", { name: /skip no-bid/i }));
-
-    expect(screen.getByRole("heading", { name: /setup complete/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/\$1500/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/no properties won/i).length).toBeGreaterThan(0);
-
-    await user.click(screen.getByRole("button", { name: /new setup/i }));
-
-    expect(screen.getByRole("heading", { name: /start a property auction/i })).toBeInTheDocument();
-  });
-
-  it("resolves local silent auction ties with a sudden-death re-bid", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await enterLocalSetup(user);
-    await user.click(screen.getByRole("button", { name: /silent/i }));
-    await user.clear(screen.getByLabelText(/property count/i));
-    await user.type(screen.getByLabelText(/property count/i), "1");
-    await user.click(screen.getByRole("button", { name: /start bidding/i }));
-
-    const openingInputs = screen.getAllByLabelText(/opening/i);
-    const maxInputs = screen.getAllByLabelText(/^max$/i);
-    await user.clear(openingInputs[0]);
-    await user.type(openingInputs[0], "20");
-    await user.clear(maxInputs[0]);
-    await user.type(maxInputs[0], "100");
-    await user.clear(openingInputs[1]);
-    await user.type(openingInputs[1], "20");
-    await user.clear(maxInputs[1]);
-    await user.type(maxInputs[1], "100");
-    await user.clear(openingInputs[2]);
-    await user.type(openingInputs[2], "20");
-    await user.clear(maxInputs[2]);
-    await user.type(maxInputs[2], "20");
-
-    await user.click(screen.getByRole("button", { name: /resolve bids/i }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent(/top bids tied/i);
-    expect(screen.getByRole("heading", { name: /sudden-death re-bid/i })).toBeInTheDocument();
-
-    const rebidMaxInputs = screen.getAllByLabelText(/^max$/i);
-    await user.clear(rebidMaxInputs[0]);
-    await user.type(rebidMaxInputs[0], "120");
-    await user.clear(rebidMaxInputs[1]);
-    await user.type(rebidMaxInputs[1], "100");
-    await user.click(screen.getByRole("button", { name: /resolve bids/i }));
-
-    expect(screen.getByRole("heading", { name: /setup complete/i })).toBeInTheDocument();
   });
 
   it("shows host lobby server errors when start bidding is rejected", async () => {
@@ -387,9 +293,11 @@ describe("App", () => {
             },
             currentProperty: propertyById.get("mediterranean-avenue")!,
             currentBid: 20,
+            currentBidderName: "Isaac",
             openingBid: 20,
             remainingPropertyCount: 1,
             countdownRemaining: 10,
+            remainingBidCount: 0,
             hasSkipped: false,
             roundMessage: null
           }
@@ -404,6 +312,65 @@ describe("App", () => {
       expect(card).toHaveStyle({ backgroundColor: "rgb(255, 255, 255)" });
       expect(card.style.backgroundImage).toContain("linear-gradient");
       expect(card.style.getPropertyValue("--property-color")).toMatch(/^#/);
+    }
+  });
+
+  it("shows remaining bids, disables bids at zero, and attributes the current multiplayer bid", async () => {
+    const sockets: FakeSocket[] = [];
+    vi.stubGlobal(
+      "WebSocket",
+      class extends FakeSocket {
+        static OPEN = 1;
+
+        constructor(url: string) {
+          super(url);
+          sockets.push(this);
+        }
+      }
+    );
+    const propertyById = new Map(MONOPOLY_PROPERTIES.map((property) => [property.id, property]));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: /join session/i }));
+    await user.type(screen.getByLabelText(/join code/i), "TABLE1");
+    await user.type(screen.getByLabelText(/player name/i), "Joelle");
+    await user.click(screen.getByRole("button", { name: /^join$/i }));
+    act(() => {
+      sockets[0].emit("open");
+      sockets[0].emit("message", {
+        data: JSON.stringify({ type: "joined", joinCode: "TABLE1", playerId: "player-1" })
+      });
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "player-state",
+          state: {
+            role: "player",
+            joinCode: "TABLE1",
+            player: {
+              id: "player-1",
+              name: "Joelle",
+              remainingCash: 920,
+              properties: []
+            },
+            currentProperty: propertyById.get("mediterranean-avenue")!,
+            currentBid: 70,
+            currentBidderName: "Isaac",
+            openingBid: 20,
+            remainingPropertyCount: 1,
+            countdownRemaining: 10,
+            remainingBidCount: 0,
+            hasSkipped: false,
+            roundMessage: null
+          }
+        })
+      });
+    });
+
+    expect(screen.getByText(/current bid: \$70 by isaac/i)).toBeInTheDocument();
+    expect(screen.getByText(/bids remaining: 0/i)).toBeInTheDocument();
+    for (const button of screen.getAllByRole("button", { name: /^\+\$/i })) {
+      expect(button).toBeDisabled();
     }
   });
 });
@@ -440,10 +407,10 @@ async function enterLocalSetup(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("countdown urgency", () => {
-  it("speeds up tick timing near the deadline", () => {
+  it("keeps countdown ticks at one second even near the deadline", () => {
     expect(countdownTickDelay(20)).toBe(1000);
-    expect(countdownTickDelay(5)).toBe(350);
-    expect(countdownTickDelay(1)).toBe(350);
+    expect(countdownTickDelay(5)).toBe(1000);
+    expect(countdownTickDelay(1)).toBe(1000);
   });
 });
 

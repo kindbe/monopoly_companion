@@ -6,6 +6,7 @@ export type SessionConfig = PoolOptions & {
   propertyCount: number;
   increment: number;
   countdownSeconds: number;
+  maxBidsPerPlayer: number;
 };
 
 export type CompletedBid = {
@@ -27,6 +28,7 @@ export type HostState = {
   players: HostPlayerSummary[];
   currentProperty: Property | null;
   currentBid: number;
+  currentBidderName: string | null;
   openingBid: number;
   remainingPropertyCount: number;
   countdownRemaining: number;
@@ -41,9 +43,11 @@ export type PlayerState = {
   phase: SessionPhase;
   currentProperty: Property | null;
   currentBid: number;
+  currentBidderName: string | null;
   openingBid: number;
   remainingPropertyCount: number;
   countdownRemaining: number;
+  remainingBidCount: number;
   hasSkipped: boolean;
   roundMessage: string | null;
   player: Player;

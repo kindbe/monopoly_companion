@@ -13,6 +13,7 @@ test("host and two players complete a multiplayer bidding session", async ({ bro
   await host.getByRole("button", { name: /host multiplayer/i }).click();
   await host.getByLabel(/host name/i).fill("Host");
   await host.getByLabel(/property count/i).fill("1");
+  await host.getByLabel(/max bids per property/i).fill("1");
   await host.getByRole("button", { name: /create session/i }).click();
 
   await expect(host.getByRole("heading", { name: /host lobby/i })).toBeVisible();
@@ -37,19 +38,31 @@ test("host and two players complete a multiplayer bidding session", async ({ bro
   await expect(host.getByText(/mortgage: \$/i)).toBeVisible();
   await expect(host.getByText(/remaining properties: 1/i)).toBeVisible();
   await expect(host.getByText(/^5s$/i)).toBeVisible();
+  await expect(host.getByText(/bids remaining: 1/i)).toBeVisible();
+  await expect(playerOne.getByText(/bids remaining: 1/i)).toBeVisible();
 
   const openingBid = await visibleDollarAmount(host, /current bid: \$(\d+)/i);
   await host.getByRole("button", { name: /^\+\$10$/i }).click();
-  await playerOne.getByRole("button", { name: /^skip$/i }).click();
+  await expect(host.getByText(new RegExp(`current bid: \\$${openingBid + 10} by Host`, "i"))).toBeVisible();
+  await expect(host.getByText(/bids remaining: 0/i)).toBeVisible();
+  await expect(host.getByRole("button", { name: /^\+\$10$/i })).toBeDisabled();
+  await expect(playerOne.getByText(new RegExp(`current bid: \\$${openingBid + 10} by Host`, "i"))).toBeVisible();
+
+  await playerOne.getByRole("button", { name: /^\+\$10$/i }).click();
+  await expect(playerOne.getByText(new RegExp(`current bid: \\$${openingBid + 20} by Joelle`, "i"))).toBeVisible();
+  await expect(playerOne.getByText(/bids remaining: 0/i)).toBeVisible();
+  await expect(playerOne.getByRole("button", { name: /^\+\$10$/i })).toBeDisabled();
+  await expect(playerTwo.getByText(new RegExp(`current bid: \\$${openingBid + 20} by Joelle`, "i"))).toBeVisible();
+
   await playerTwo.getByRole("button", { name: /^skip$/i }).click();
   await expect(playerTwo.getByRole("button", { name: /^\+\$10$/i })).toBeDisabled();
   await expect(playerTwo.getByRole("button", { name: /skipped this round/i })).toBeDisabled();
 
-  await expect(host.getByText(new RegExp(`your cash: \\$${1500 - openingBid - 10} / \\$1500`, "i"))).toBeVisible();
-  await expect(host.getByText(/no properties won/i)).not.toBeVisible();
+  await expect(host.getByText(/your cash: \$1500 \/ \$1500/i)).toBeVisible();
+  await expect(playerOne.getByText(new RegExp(`your cash: \\$${1500 - openingBid - 20} / \\$1500`, "i"))).toBeVisible();
+  await expect(playerOne.getByText(/no properties won/i)).not.toBeVisible();
   await expect(host.getByText(/completed bids:/i)).not.toBeVisible();
   await expect(playerTwo.getByText(/your cash: \$1500 \/ \$1500/i)).toBeVisible();
-  await expect(playerTwo.getByText(/Host/i)).not.toBeVisible();
 });
 
 test("theme toggle switches between preferred dark mode and light mode", async ({ page }) => {
