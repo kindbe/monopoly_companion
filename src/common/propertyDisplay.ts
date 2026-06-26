@@ -18,9 +18,11 @@ export function propertyAccent(property: Property) {
 
 export function sortPropertiesByDisplayValue(properties: Property[]) {
   return [...properties].sort((left, right) => {
-    const groupDelta = propertyGroupRank(right) - propertyGroupRank(left);
+    const groupDelta = propertyGroupRank(left) - propertyGroupRank(right);
     if (groupDelta !== 0) return groupDelta;
-    return right.retailValue - left.retailValue;
+    const valueDelta = left.retailValue - right.retailValue;
+    if (valueDelta !== 0) return valueDelta;
+    return left.name.localeCompare(right.name);
   });
 }
 
@@ -36,21 +38,25 @@ export function groupWonProperties(properties: Property[]) {
       properties: groupProperties,
       rank: Math.min(...groupProperties.map(propertyGroupRank))
     }))
-    .sort((left, right) => right.rank - left.rank);
+    .sort((left, right) => {
+      const rankDelta = left.rank - right.rank;
+      if (rankDelta !== 0) return rankDelta;
+      return left.label.localeCompare(right.label);
+    });
 }
 
 function propertyGroupRank(property: Property) {
-  if (property.category === "railroad") return 1;
-  if (property.category === "utility") return 0;
+  if (property.category === "utility") return 150;
+  if (property.category === "railroad") return 200;
   const ranks: Record<string, number> = {
-    "Dark Blue": 8,
-    Green: 7,
-    Yellow: 6,
-    Red: 5,
-    Orange: 4,
-    Pink: 3,
-    "Light Blue": 3,
-    Purple: 2
+    Purple: 60,
+    "Light Blue": 100,
+    Pink: 140,
+    Orange: 180,
+    Red: 220,
+    Yellow: 260,
+    Green: 300,
+    "Dark Blue": 350
   };
-  return ranks[property.colorGroup] ?? 0;
+  return ranks[property.colorGroup] ?? property.retailValue;
 }

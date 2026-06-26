@@ -12,6 +12,7 @@ export type PlayerBiddingScreenProps = {
   wonProperties: Property[];
   hasSkipped: boolean;
   roundMessage: string | null;
+  inspectProperty: (property: Property) => void;
   bid: (bidIncrement: number) => void;
   skip: () => void;
 };

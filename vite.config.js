@@ -26,6 +26,8 @@ export default defineConfig({
                 "src/server/index.ts",
                 "src/shared/**",
                 "src/test/**",
+                "src/common/auctionTypes.ts",
+                "src/components/**/types.ts",
                 "**/*.d.ts"
             ],
             thresholds: {

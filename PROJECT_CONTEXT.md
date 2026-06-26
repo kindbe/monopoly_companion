@@ -34,7 +34,7 @@ When implementing a change:
  - Do not introduce a new dependency unless it provides clear value.
 
 Before considering a change complete:
- - Run the relevant unit tests.
+ - Run the relevant unit tests.  Verify that overall code coverage is at or above 80% line coverage.
  - Run type checking and linting.
  - Run end-to-end tests when the change affects a complete user workflow or multiplayer coordination.
  - Report any tests that could not be run or any remaining uncertainty.

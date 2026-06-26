@@ -527,6 +527,7 @@ export default function App() {
             wonProperties={playerState?.player.properties ?? []}
             hasSkipped={playerState?.hasSkipped ?? false}
             roundMessage={playerState?.roundMessage ?? null}
+            inspectProperty={setSelectedWonProperty}
             bid={submitMultiplayerBid}
             skip={skipMultiplayerProperty}
           />

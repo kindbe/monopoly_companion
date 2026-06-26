@@ -199,6 +199,29 @@ describe("App", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/at least two players are required/i);
   });
 
+  it("falls back from host lobby to local setup and completes a skipped one-property auction", async () => {
+    vi.stubGlobal(
+      "WebSocket",
+      class extends FakeSocket {
+        static OPEN = 1;
+      }
+    );
+    const user = userEvent.setup();
+    render(<App />);
+
+    await enterLocalSetup(user);
+    await user.clear(screen.getByLabelText(/property count/i));
+    await user.type(screen.getByLabelText(/property count/i), "1");
+    await user.click(screen.getByRole("button", { name: /^start bidding$/i }));
+
+    expect(screen.getByRole("heading", { name: /ascending auction/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /skip no-bid/i }));
+
+    expect(await screen.findByRole("heading", { name: /setup complete/i })).toBeInTheDocument();
+    expect(screen.getByText(/1 properties resolved/i)).toBeInTheDocument();
+  });
+
   it("requires a join code and name for player join", async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -249,7 +272,7 @@ describe("App", () => {
     }
   });
 
-  it("renders won mini property cards with white backgrounds and property color headers", async () => {
+  it("renders clickable won mini property cards that open the full card", async () => {
     const sockets: FakeSocket[] = [];
     vi.stubGlobal(
       "WebSocket",
@@ -313,6 +336,13 @@ describe("App", () => {
       expect(card.style.backgroundImage).toContain("linear-gradient");
       expect(card.style.getPropertyValue("--property-color")).toMatch(/^#/);
     }
+
+    await user.click(screen.getByRole("button", { name: /view boardwalk/i }));
+
+    const dialog = await screen.findByRole("dialog", { name: /boardwalk/i });
+    expect(dialog).toHaveTextContent(/title deed/i);
+    expect(dialog).toHaveTextContent(/price: \$400/i);
+    expect(dialog).toHaveTextContent(/mortgage: \$200/i);
   });
 
   it("shows remaining bids, disables bids at zero, and attributes the current multiplayer bid", async () => {
@@ -424,7 +454,7 @@ describe("property display refinements", () => {
     });
   });
 
-  it("sorts owned property cards by most valuable color group first", () => {
+  it("sorts owned property cards by ascending face value", () => {
     const propertyById = new Map(MONOPOLY_PROPERTIES.map((property) => [property.id, property]));
     const sorted = sortPropertiesByDisplayValue([
       propertyById.get("mediterranean-avenue")!,
@@ -435,11 +465,11 @@ describe("property display refinements", () => {
     ]);
 
     expect(sorted.map((property) => property.id)).toEqual([
-      "boardwalk",
-      "kentucky-avenue",
       "mediterranean-avenue",
+      "water-works",
       "reading-railroad",
-      "water-works"
+      "kentucky-avenue",
+      "boardwalk"
     ]);
   });
 });

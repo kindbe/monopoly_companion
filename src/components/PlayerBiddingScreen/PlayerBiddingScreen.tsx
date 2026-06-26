@@ -16,6 +16,7 @@ export function PlayerBiddingScreen({
   wonProperties,
   hasSkipped,
   roundMessage,
+  inspectProperty,
   bid,
   skip
 }: PlayerBiddingScreenProps) {
@@ -68,7 +69,11 @@ export function PlayerBiddingScreen({
           {hasSkipped ? "Skipped this round" : "Skip"}
         </button>
         <h3>Your properties</h3>
-        {wonProperties.length ? <MiniPropertyCards properties={wonProperties} /> : <p className={finePrintClass}>No properties won</p>}
+        {wonProperties.length ? (
+          <MiniPropertyCards properties={wonProperties} inspectProperty={inspectProperty} />
+        ) : (
+          <p className={finePrintClass}>No properties won</p>
+        )}
       </section>
     </div>
   );
