@@ -60,7 +60,7 @@ Traps:
 
 Specs can be defined manually, via a tool like OpenSpec, or some combination of multiple techniques. Having one AI help write the specs and another offer critiques can be a powerful way to enhance the process. SDD can flow naturally out of exploration, where you brainstorm on an idea or feature using AI and then coalesce that into a formal set of feature specs.
 
-In SDD, the primary artifact of software development shifts from code to specs. This is the endpoint of the "coding is a solved problem" thesis, where the plan and evaluations drive the output. So long as all acceptance criteria are met, the result is considered valid irrespective of things like coding style.
+In SDD, the primary artifact of software development shifts from code to specs. This is the endpoint of the "coding is a solved problem" thesis, where the plan and evaluations drive the output. So long as all acceptance criteria are met, the result is considered valid. Human inspection of the code may become optional, depending on the tastes of the humans involved.
 
 Traps:
 

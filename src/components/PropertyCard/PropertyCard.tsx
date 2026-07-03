@@ -18,11 +18,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
       }
     >
       <div className={propertyBandClass}>
-        <span>
-          {property.category === "street"
-            ? ""
-            : property.category}
-        </span>
+        <span>{property.category === "street" ? "" : property.category}</span>
       </div>
       <div className={propertyBodyClass}>
         <p className="m-0 font-black uppercase tracking-[0.08em]">Title Deed</p>

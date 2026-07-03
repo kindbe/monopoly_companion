@@ -19,6 +19,7 @@ export default defineConfig({
             exclude: [
                 "e2e/**",
                 "dist/**",
+                "eslint.config.ts",
                 "playwright.config.ts",
                 "vite.config.*",
                 "**/*.test.*",
