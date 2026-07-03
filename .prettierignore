@@ -5,6 +5,7 @@ openspec/
 superpowers/
 README.md
 PROJECT_CONTEXT.md
+pnpm-lock.yaml
 vite.config.*
 playwright-report/
 test-results/
