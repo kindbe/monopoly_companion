@@ -13,6 +13,7 @@
     "format:check": "prettier . --check",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "prepare": "husky",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test"
@@ -48,6 +49,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.7.0",
+    "husky": "^9.1.7",
     "jiti": "^2.7.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.5.15",
