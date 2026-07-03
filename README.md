@@ -4,7 +4,7 @@ A standalone web companion that lets players bid on Monopoly properties as part 
 
 **Status**: This is an active AI learning project. The core mechanics are functional, but it hasn't undergone any live playtesting or meaningful polish.
 
-**Disclaimer**: This is in no way affiliated or endorsed by the makers of Monopoly
+**Disclaimer**: This project is an unofficial companion app for experimenting with property-auction setup rules for a Monopoly-style board game. It is in no way affiliated with, endorsed by, or sponsored by Hasbro. Monopoly and related marks are trademarks of their respective owners.
 
 ## Why I Built This
 

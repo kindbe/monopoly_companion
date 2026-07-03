@@ -130,7 +130,7 @@ export default function App() {
           playSound("tick")
           tick(nextRemaining)
         }
-      }, countdownTickDelay(remaining))
+      }, countdownTickDelay())
     }
 
     tick(playerState.countdownRemaining)
@@ -679,6 +679,10 @@ function webSocketUrl() {
 function e2eCountdownSeconds() {
   const value = Number(import.meta.env.VITE_E2E_COUNTDOWN_SECONDS)
   return Number.isFinite(value) && value > 0 ? value : undefined
+}
+
+export function countdownTickDelay() {
+  return 1000
 }
 
 function playSound(kind: "bid" | "win" | "tick") {

@@ -20,7 +20,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
       <div className={propertyBandClass}>
         <span>
           {property.category === "street"
-            ? property.colorGroup
+            ? ""
             : property.category}
         </span>
       </div>

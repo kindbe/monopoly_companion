@@ -528,9 +528,7 @@ async function enterLocalSetup(user: ReturnType<typeof userEvent.setup>) {
 
 describe("countdown urgency", () => {
   it("keeps countdown ticks at one second even near the deadline", () => {
-    expect(countdownTickDelay(20)).toBe(1000)
-    expect(countdownTickDelay(5)).toBe(1000)
-    expect(countdownTickDelay(1)).toBe(1000)
+    expect(countdownTickDelay()).toBe(1000)
   })
 })
 
