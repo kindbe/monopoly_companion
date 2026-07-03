@@ -13,6 +13,7 @@
     "format:check": "prettier . --check",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint-staged": "lint-staged",
     "prepare": "husky",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -26,6 +27,13 @@
     "typescript": "^5.7.2",
     "vite": "^5.4.21",
     "ws": "^8.18.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx,json,css,md,yml,yaml,html}": "prettier --write"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -52,6 +60,7 @@
     "husky": "^9.1.7",
     "jiti": "^2.7.0",
     "jsdom": "^25.0.1",
+    "lint-staged": "^17.0.8",
     "postcss": "^8.5.15",
     "prettier": "^3.9.4",
     "tailwindcss": "^4.3.0",

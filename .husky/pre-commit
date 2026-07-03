@@ -1,4 +1,4 @@
-pnpm lint:fix
-pnpm format
+pnpm lint-staged
+pnpm lint
 pnpm build
 pnpm test

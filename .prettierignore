@@ -3,5 +3,6 @@ dist/
 node_modules/
 openspec/
 superpowers/
+vite.config.*
 playwright-report/
 test-results/
