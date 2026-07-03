@@ -1,5 +1,17 @@
-import { actionRowClass, checkboxClass, checkRowClass, fieldClass, finePrintClass, inputClass, panelClass, primaryActionClass, secondaryActionClass, setupGridClass, startBandClass } from "@/common/uiClasses";
-import type { HostSetupScreenProps } from "@/components/HostSetupScreen/types";
+import {
+  actionRowClass,
+  checkboxClass,
+  checkRowClass,
+  fieldClass,
+  finePrintClass,
+  inputClass,
+  panelClass,
+  primaryActionClass,
+  secondaryActionClass,
+  setupGridClass,
+  startBandClass
+} from "@/common/uiClasses"
+import type { HostSetupScreenProps } from "@/components/HostSetupScreen/types"
 
 export function HostSetupScreen(props: HostSetupScreenProps) {
   return (
@@ -8,7 +20,12 @@ export function HostSetupScreen(props: HostSetupScreenProps) {
         <h2>Host Multiplayer</h2>
         <label className={fieldClass}>
           <span>Host name</span>
-          <input className={inputClass} aria-label="Host name" value={props.hostName} onChange={(event) => props.setHostName(event.target.value)} />
+          <input
+            className={inputClass}
+            aria-label="Host name"
+            value={props.hostName}
+            onChange={(event) => props.setHostName(event.target.value)}
+          />
         </label>
         <label className={fieldClass}>
           <span>Bid deadline</span>
@@ -20,7 +37,11 @@ export function HostSetupScreen(props: HostSetupScreenProps) {
             max={30}
             step={1}
             value={props.bidDeadline}
-            onChange={(event) => props.setBidDeadline(clampNumber(Number(event.target.value), 5, 30))}
+            onChange={(event) =>
+              props.setBidDeadline(
+                clampNumber(Number(event.target.value), 5, 30)
+              )
+            }
           />
         </label>
         <label className={fieldClass}>
@@ -33,7 +54,11 @@ export function HostSetupScreen(props: HostSetupScreenProps) {
             max={5}
             step={1}
             value={props.maxBidsPerPlayer}
-            onChange={(event) => props.setMaxBidsPerPlayer(clampNumber(Number(event.target.value), 1, 5))}
+            onChange={(event) =>
+              props.setMaxBidsPerPlayer(
+                clampNumber(Number(event.target.value), 1, 5)
+              )
+            }
           />
         </label>
       </section>
@@ -45,7 +70,9 @@ export function HostSetupScreen(props: HostSetupScreenProps) {
             className={checkboxClass}
             type="checkbox"
             checked={props.includeRailroads}
-            onChange={(event) => props.setIncludeRailroads(event.target.checked)}
+            onChange={(event) =>
+              props.setIncludeRailroads(event.target.checked)
+            }
           />
           Include railroads
         </label>
@@ -54,7 +81,9 @@ export function HostSetupScreen(props: HostSetupScreenProps) {
             className={checkboxClass}
             type="checkbox"
             checked={props.includeUtilities}
-            onChange={(event) => props.setIncludeUtilities(event.target.checked)}
+            onChange={(event) =>
+              props.setIncludeUtilities(event.target.checked)
+            }
           />
           Include utilities
         </label>
@@ -67,28 +96,41 @@ export function HostSetupScreen(props: HostSetupScreenProps) {
             min={1}
             max={props.maxProperties}
             value={props.propertyCount}
-            onChange={(event) => props.setPropertyCount(Number(event.target.value))}
+            onChange={(event) =>
+              props.setPropertyCount(Number(event.target.value))
+            }
           />
         </label>
-        <p className={finePrintClass}>{props.maxProperties} eligible properties. The reveal list stays hidden.</p>
+        <p className={finePrintClass}>
+          {props.maxProperties} eligible properties. The reveal list stays
+          hidden.
+        </p>
       </section>
 
       <section className={startBandClass}>
         {props.message ? <p role="alert">{props.message}</p> : null}
         <div className={actionRowClass}>
-          <button type="button" className={primaryActionClass} onClick={props.createSession}>
+          <button
+            type="button"
+            className={primaryActionClass}
+            onClick={props.createSession}
+          >
             Create session
           </button>
-          <button type="button" className={secondaryActionClass} onClick={props.back}>
+          <button
+            type="button"
+            className={secondaryActionClass}
+            onClick={props.back}
+          >
             Back
           </button>
         </div>
       </section>
     </div>
-  );
+  )
 }
 
 function clampNumber(value: number, min: number, max: number) {
-  if (!Number.isFinite(value)) return min;
-  return Math.min(max, Math.max(min, Math.round(value)));
+  if (!Number.isFinite(value)) return min
+  return Math.min(max, Math.max(min, Math.round(value)))
 }

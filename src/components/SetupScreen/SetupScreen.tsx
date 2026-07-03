@@ -1,6 +1,19 @@
-import { Gavel, Shuffle } from "lucide-react";
-import { actionRowClass, checkboxClass, checkRowClass, fieldClass, finePrintClass, inputClass, modeButtonClass, panelClass, primaryActionClass, secondaryActionClass, setupGridClass, startBandClass } from "@/common/uiClasses";
-import type { SetupScreenProps } from "@/components/SetupScreen/types";
+import { Gavel, Shuffle } from "lucide-react"
+import {
+  actionRowClass,
+  checkboxClass,
+  checkRowClass,
+  fieldClass,
+  finePrintClass,
+  inputClass,
+  modeButtonClass,
+  panelClass,
+  primaryActionClass,
+  secondaryActionClass,
+  setupGridClass,
+  startBandClass
+} from "@/common/uiClasses"
+import type { SetupScreenProps } from "@/components/SetupScreen/types"
 
 export function SetupScreen(props: SetupScreenProps) {
   return (
@@ -8,10 +21,20 @@ export function SetupScreen(props: SetupScreenProps) {
       <section className={panelClass}>
         <h2>Auction Rules</h2>
         <div className="mb-4 grid grid-cols-2 gap-2" aria-label="Bidding mode">
-          <button type="button" className={modeButtonClass} aria-pressed={props.mode === "ascending"} onClick={() => props.setMode("ascending")}>
+          <button
+            type="button"
+            className={modeButtonClass}
+            aria-pressed={props.mode === "ascending"}
+            onClick={() => props.setMode("ascending")}
+          >
             <Gavel size={18} /> Ascending
           </button>
-          <button type="button" className={modeButtonClass} aria-pressed={props.mode === "silent"} onClick={() => props.setMode("silent")}>
+          <button
+            type="button"
+            className={modeButtonClass}
+            aria-pressed={props.mode === "silent"}
+            onClick={() => props.setMode("silent")}
+          >
             <Shuffle size={18} /> Silent
           </button>
         </div>
@@ -24,7 +47,9 @@ export function SetupScreen(props: SetupScreenProps) {
             min={1}
             step={1}
             value={props.increment}
-            onChange={(event) => props.setIncrement(Math.max(1, Number(event.target.value)))}
+            onChange={(event) =>
+              props.setIncrement(Math.max(1, Number(event.target.value)))
+            }
           />
         </label>
         <label className={fieldClass}>
@@ -37,7 +62,11 @@ export function SetupScreen(props: SetupScreenProps) {
             max={30}
             step={1}
             value={props.bidDeadline}
-            onChange={(event) => props.setBidDeadline(clampNumber(Number(event.target.value), 5, 30))}
+            onChange={(event) =>
+              props.setBidDeadline(
+                clampNumber(Number(event.target.value), 5, 30)
+              )
+            }
           />
         </label>
       </section>
@@ -49,7 +78,9 @@ export function SetupScreen(props: SetupScreenProps) {
             className={checkboxClass}
             type="checkbox"
             checked={props.includeRailroads}
-            onChange={(event) => props.setIncludeRailroads(event.target.checked)}
+            onChange={(event) =>
+              props.setIncludeRailroads(event.target.checked)
+            }
           />
           Include railroads
         </label>
@@ -58,7 +89,9 @@ export function SetupScreen(props: SetupScreenProps) {
             className={checkboxClass}
             type="checkbox"
             checked={props.includeUtilities}
-            onChange={(event) => props.setIncludeUtilities(event.target.checked)}
+            onChange={(event) =>
+              props.setIncludeUtilities(event.target.checked)
+            }
           />
           Include utilities
         </label>
@@ -71,10 +104,15 @@ export function SetupScreen(props: SetupScreenProps) {
             min={1}
             max={props.maxProperties}
             value={props.propertyCount}
-            onChange={(event) => props.setPropertyCount(Number(event.target.value))}
+            onChange={(event) =>
+              props.setPropertyCount(Number(event.target.value))
+            }
           />
         </label>
-        <p className={finePrintClass}>{props.maxProperties} eligible properties. The reveal list stays hidden.</p>
+        <p className={finePrintClass}>
+          {props.maxProperties} eligible properties. The reveal list stays
+          hidden.
+        </p>
       </section>
 
       <section className={`${panelClass} grid content-start gap-2`}>
@@ -85,14 +123,25 @@ export function SetupScreen(props: SetupScreenProps) {
               className={inputClass}
               aria-label={`Player ${index + 1} name`}
               value={name}
-              onChange={(event) => props.updatePlayerName(index, event.target.value)}
+              onChange={(event) =>
+                props.updatePlayerName(index, event.target.value)
+              }
             />
-            <button className={secondaryActionClass} type="button" onClick={() => props.removePlayer(index)} aria-label={`Remove player ${index + 1}`}>
+            <button
+              className={secondaryActionClass}
+              type="button"
+              onClick={() => props.removePlayer(index)}
+              aria-label={`Remove player ${index + 1}`}
+            >
               -
             </button>
           </div>
         ))}
-        <button type="button" className={secondaryActionClass} onClick={props.addPlayer}>
+        <button
+          type="button"
+          className={secondaryActionClass}
+          onClick={props.addPlayer}
+        >
           Add player
         </button>
       </section>
@@ -100,22 +149,34 @@ export function SetupScreen(props: SetupScreenProps) {
       <section className={startBandClass}>
         {props.message ? <p role="alert">{props.message}</p> : null}
         <div className={actionRowClass}>
-          <button type="button" className={primaryActionClass} onClick={props.startBidding}>
+          <button
+            type="button"
+            className={primaryActionClass}
+            onClick={props.startBidding}
+          >
             <Gavel size={20} /> Start bidding
           </button>
-          <button type="button" className={secondaryActionClass} onClick={props.hostMultiplayer}>
+          <button
+            type="button"
+            className={secondaryActionClass}
+            onClick={props.hostMultiplayer}
+          >
             Host multiplayer
           </button>
-          <button type="button" className={secondaryActionClass} onClick={props.joinMultiplayer}>
+          <button
+            type="button"
+            className={secondaryActionClass}
+            onClick={props.joinMultiplayer}
+          >
             Join session
           </button>
         </div>
       </section>
     </div>
-  );
+  )
 }
 
 function clampNumber(value: number, min: number, max: number) {
-  if (!Number.isFinite(value)) return min;
-  return Math.min(max, Math.max(min, Math.round(value)));
+  if (!Number.isFinite(value)) return min
+  return Math.min(max, Math.max(min, Math.round(value)))
 }

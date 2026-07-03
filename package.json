@@ -4,10 +4,14 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "build": "tsc -b && vite build",
     "dev": "vite --host 0.0.0.0",
     "dev:server": "tsx src/server/index.ts",
     "dev:all": "concurrently \"pnpm dev:server\" \"pnpm dev\"",
-    "build": "tsc -b && vite build",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test"
@@ -22,6 +26,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.50.0",
     "@tailwindcss/vite": "^4.3.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -31,13 +36,24 @@
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@types/ws": "^8.5.13",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
     "@vitest/coverage-v8": "^2.1.9",
     "autoprefixer": "^10.5.0",
     "concurrently": "^9.1.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "jiti": "^2.7.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.5.15",
+    "prettier": "^3.9.4",
     "tailwindcss": "^4.3.0",
     "tsx": "^4.19.2",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^2.1.8"
   }
 }

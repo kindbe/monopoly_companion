@@ -1,14 +1,19 @@
-import type React from "react";
-import { groupWonProperties, propertyAccent } from "@/common/propertyDisplay";
-import type { Property } from "@/domain/bidding";
-import type { MiniPropertyCardsProps } from "@/components/MiniPropertyCards/types";
+import type React from "react"
+import { groupWonProperties, propertyAccent } from "@/common/propertyDisplay"
+import type { Property } from "@/domain/bidding"
+import type { MiniPropertyCardsProps } from "@/components/MiniPropertyCards/types"
 
-export function MiniPropertyCards({ properties, inspectProperty }: MiniPropertyCardsProps) {
+export function MiniPropertyCards({
+  properties,
+  inspectProperty
+}: MiniPropertyCardsProps) {
   return (
     <div className="grid gap-3">
       {groupWonProperties(properties).map((group) => (
         <section key={group.label}>
-          <h4 className="mb-2 mt-0 text-xs font-extrabold uppercase tracking-[0.08em] text-slate-600 dark:text-violet-200/76">{group.label} color group</h4>
+          <h4 className="mb-2 mt-0 text-xs font-extrabold uppercase tracking-[0.08em] text-slate-600 dark:text-violet-200/76">
+            {group.label} color group
+          </h4>
           <div className="grid grid-cols-[repeat(4,minmax(92px,1fr))] gap-2">
             {group.properties.map((property) => (
               <button
@@ -28,14 +33,14 @@ export function MiniPropertyCards({ properties, inspectProperty }: MiniPropertyC
         </section>
       ))}
     </div>
-  );
+  )
 }
 
 function miniPropertyCardStyle(property: Property) {
-  const accent = propertyAccent(property);
+  const accent = propertyAccent(property)
   return {
     "--property-color": accent,
     backgroundColor: "#ffffff",
     backgroundImage: `linear-gradient(${accent} 0 24px, transparent 24px)`
-  } as React.CSSProperties;
+  } as React.CSSProperties
 }

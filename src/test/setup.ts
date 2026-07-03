@@ -1,3 +1,3 @@
-import "@testing-library/jest-dom/vitest";
+import "@testing-library/jest-dom/vitest"
 
-HTMLMediaElement.prototype.play = () => Promise.resolve();
+HTMLMediaElement.prototype.play = () => Promise.resolve()

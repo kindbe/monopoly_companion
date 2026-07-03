@@ -1,23 +1,26 @@
-export type MultiplayerMode = "webrtc" | "websocket" | "unavailable";
+export type MultiplayerMode = "webrtc" | "websocket" | "unavailable"
 
 export function chooseMultiplayerMode({
   requestedMode,
   hasWebRtc,
   hasWebSocket
 }: {
-  requestedMode: string | undefined;
-  hasWebRtc: boolean;
-  hasWebSocket: boolean;
+  requestedMode: string | undefined
+  hasWebRtc: boolean
+  hasWebSocket: boolean
 }): MultiplayerMode {
   if (requestedMode === "webrtc" && hasWebRtc) {
-    return "webrtc";
+    return "webrtc"
   }
   if (hasWebSocket) {
-    return "websocket";
+    return "websocket"
   }
-  return "unavailable";
+  return "unavailable"
 }
 
 export function browserSupportsWebRtc() {
-  return typeof RTCPeerConnection !== "undefined" && typeof RTCDataChannel !== "undefined";
+  return (
+    typeof RTCPeerConnection !== "undefined" &&
+    typeof RTCDataChannel !== "undefined"
+  )
 }

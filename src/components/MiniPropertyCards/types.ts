@@ -1,6 +1,6 @@
-import type { Property } from "@/domain/bidding";
+import type { Property } from "@/domain/bidding"
 
 export type MiniPropertyCardsProps = {
-  properties: Property[];
-  inspectProperty: (property: Property) => void;
-};
+  properties: Property[]
+  inspectProperty: (property: Property) => void
+}

@@ -1,8 +1,8 @@
-import type { Property } from "@/domain/bidding";
+import type { Property } from "@/domain/bidding"
 
 export function propertyAccent(property: Property) {
-  if (property.category === "railroad") return "#1f2937";
-  if (property.category === "utility") return "#0891b2";
+  if (property.category === "railroad") return "#1f2937"
+  if (property.category === "utility") return "#0891b2"
   const colors: Record<string, string> = {
     Purple: "#7e3fa3",
     "Light Blue": "#7dd3fc",
@@ -12,25 +12,26 @@ export function propertyAccent(property: Property) {
     Yellow: "#facc15",
     Green: "#16a34a",
     "Dark Blue": "#1d4ed8"
-  };
-  return colors[property.colorGroup] ?? "#111827";
+  }
+  return colors[property.colorGroup] ?? "#111827"
 }
 
 export function sortPropertiesByDisplayValue(properties: Property[]) {
   return [...properties].sort((left, right) => {
-    const groupDelta = propertyGroupRank(left) - propertyGroupRank(right);
-    if (groupDelta !== 0) return groupDelta;
-    const valueDelta = left.retailValue - right.retailValue;
-    if (valueDelta !== 0) return valueDelta;
-    return left.name.localeCompare(right.name);
-  });
+    const groupDelta = propertyGroupRank(left) - propertyGroupRank(right)
+    if (groupDelta !== 0) return groupDelta
+    const valueDelta = left.retailValue - right.retailValue
+    if (valueDelta !== 0) return valueDelta
+    return left.name.localeCompare(right.name)
+  })
 }
 
 export function groupWonProperties(properties: Property[]) {
-  const groups = new Map<string, Property[]>();
+  const groups = new Map<string, Property[]>()
   for (const property of sortPropertiesByDisplayValue(properties)) {
-    const label = property.category === "street" ? property.colorGroup : property.category;
-    groups.set(label, [...(groups.get(label) ?? []), property]);
+    const label =
+      property.category === "street" ? property.colorGroup : property.category
+    groups.set(label, [...(groups.get(label) ?? []), property])
   }
   return [...groups.entries()]
     .map(([label, groupProperties]) => ({
@@ -39,15 +40,15 @@ export function groupWonProperties(properties: Property[]) {
       rank: Math.min(...groupProperties.map(propertyGroupRank))
     }))
     .sort((left, right) => {
-      const rankDelta = left.rank - right.rank;
-      if (rankDelta !== 0) return rankDelta;
-      return left.label.localeCompare(right.label);
-    });
+      const rankDelta = left.rank - right.rank
+      if (rankDelta !== 0) return rankDelta
+      return left.label.localeCompare(right.label)
+    })
 }
 
 function propertyGroupRank(property: Property) {
-  if (property.category === "utility") return 150;
-  if (property.category === "railroad") return 200;
+  if (property.category === "utility") return 150
+  if (property.category === "railroad") return 200
   const ranks: Record<string, number> = {
     Purple: 60,
     "Light Blue": 100,
@@ -57,6 +58,6 @@ function propertyGroupRank(property: Property) {
     Yellow: 260,
     Green: 300,
     "Dark Blue": 350
-  };
-  return ranks[property.colorGroup] ?? property.retailValue;
+  }
+  return ranks[property.colorGroup] ?? property.retailValue
 }

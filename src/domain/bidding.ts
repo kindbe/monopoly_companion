@@ -1,117 +1,296 @@
-export type PropertyCategory = "street" | "railroad" | "utility";
+export type PropertyCategory = "street" | "railroad" | "utility"
 
 type BaseProperty = {
-  id: string;
-  name: string;
-  category: PropertyCategory;
-  retailValue: number;
-  mortgage: number;
-};
+  id: string
+  name: string
+  category: PropertyCategory
+  retailValue: number
+  mortgage: number
+}
 
 export type StreetProperty = BaseProperty & {
-  category: "street";
-  colorGroup: string;
-  rent: [number, number, number, number, number, number];
-  houseCost: number;
-  hotelCost: number;
-};
+  category: "street"
+  colorGroup: string
+  rent: [number, number, number, number, number, number]
+  houseCost: number
+  hotelCost: number
+}
 
 export type RailroadProperty = BaseProperty & {
-  category: "railroad";
-  rentDescription: string;
-};
+  category: "railroad"
+  rentDescription: string
+}
 
 export type UtilityProperty = BaseProperty & {
-  category: "utility";
-  rentDescription: string;
-};
+  category: "utility"
+  rentDescription: string
+}
 
-export type Property = StreetProperty | RailroadProperty | UtilityProperty;
+export type Property = StreetProperty | RailroadProperty | UtilityProperty
 
 export type Player = {
-  id: string;
-  name: string;
-  remainingCash: number;
-  properties: Property[];
-};
+  id: string
+  name: string
+  remainingCash: number
+  properties: Property[]
+}
 
 export type PoolOptions = {
-  includeRailroads: boolean;
-  includeUtilities: boolean;
-};
+  includeRailroads: boolean
+  includeUtilities: boolean
+}
 
 export type PropertyDeck = {
-  revealed: Property[];
-  hidden: Property[];
-};
+  revealed: Property[]
+  hidden: Property[]
+}
 
 export type AscendingAuction = {
-  increment: number;
-  activeBidderIds: string[];
-  currentBid: number;
-  currentBidderId: string | null;
-  status: "open" | "sold" | "skipped";
-  result: AuctionResult | null;
-};
+  increment: number
+  activeBidderIds: string[]
+  currentBid: number
+  currentBidderId: string | null
+  status: "open" | "sold" | "skipped"
+  result: AuctionResult | null
+}
 
 export type AuctionResult = {
-  winnerId: string | null;
-  price: number;
-};
+  winnerId: string | null
+  price: number
+}
 
 export type SilentBid = {
-  playerId: string;
-  openingBid: number;
-  maxBid: number;
-  remainingCash: number;
-};
+  playerId: string
+  openingBid: number
+  maxBid: number
+  remainingCash: number
+}
 
 export type SilentAuctionResult = {
-  status: "sold" | "tie" | "skipped";
-  winnerId: string | null;
-  price: number;
-  tiedPlayerIds: string[];
-};
+  status: "sold" | "tie" | "skipped"
+  winnerId: string | null
+  price: number
+  tiedPlayerIds: string[]
+}
 
-export const STARTING_CASH = 1500;
-export const QUICK_BID_INCREMENTS = [10, 20, 50, 100] as const;
+export const STARTING_CASH = 1500
+export const QUICK_BID_INCREMENTS = [10, 20, 50, 100] as const
 
 export const MONOPOLY_PROPERTIES: Property[] = [
-  street("mediterranean-avenue", "Mediterranean Avenue", "Purple", 60, 30, [2, 10, 30, 90, 160, 250], 50),
-  street("baltic-avenue", "Baltic Avenue", "Purple", 60, 30, [4, 20, 60, 180, 320, 450], 50),
-  street("oriental-avenue", "Oriental Avenue", "Light Blue", 100, 50, [6, 30, 90, 270, 400, 550], 50),
-  street("vermont-avenue", "Vermont Avenue", "Light Blue", 100, 50, [6, 30, 90, 270, 400, 550], 50),
-  street("connecticut-avenue", "Connecticut Avenue", "Light Blue", 120, 60, [8, 40, 100, 300, 450, 600], 50),
-  street("st-charles-place", "St. Charles Place", "Pink", 140, 70, [10, 50, 150, 450, 625, 750], 100),
-  street("states-avenue", "States Avenue", "Pink", 140, 70, [10, 50, 150, 450, 625, 750], 100),
-  street("virginia-avenue", "Virginia Avenue", "Pink", 160, 80, [12, 60, 180, 500, 700, 900], 100),
-  street("st-james-place", "St. James Place", "Orange", 180, 90, [14, 70, 200, 550, 750, 950], 100),
-  street("tennessee-avenue", "Tennessee Avenue", "Orange", 180, 90, [14, 70, 200, 550, 750, 950], 100),
-  street("new-york-avenue", "New York Avenue", "Orange", 200, 100, [16, 80, 220, 600, 800, 1000], 100),
-  street("kentucky-avenue", "Kentucky Avenue", "Red", 220, 110, [18, 90, 250, 700, 875, 1050], 150),
-  street("indiana-avenue", "Indiana Avenue", "Red", 220, 110, [18, 90, 250, 700, 875, 1050], 150),
-  street("illinois-avenue", "Illinois Avenue", "Red", 240, 120, [20, 100, 300, 750, 925, 1100], 150),
-  street("atlantic-avenue", "Atlantic Avenue", "Yellow", 260, 130, [22, 110, 330, 800, 975, 1150], 150),
-  street("ventnor-avenue", "Ventnor Avenue", "Yellow", 260, 130, [22, 110, 330, 800, 975, 1150], 150),
-  street("marvin-gardens", "Marvin Gardens", "Yellow", 280, 140, [24, 120, 360, 850, 1025, 1200], 150),
-  street("pacific-avenue", "Pacific Avenue", "Green", 300, 150, [26, 130, 390, 900, 1100, 1275], 200),
-  street("north-carolina-avenue", "North Carolina Avenue", "Green", 300, 150, [26, 130, 390, 900, 1100, 1275], 200),
-  street("pennsylvania-avenue", "Pennsylvania Avenue", "Green", 320, 160, [28, 150, 450, 1000, 1200, 1400], 200),
-  street("park-place", "Park Place", "Dark Blue", 350, 175, [35, 175, 500, 1100, 1300, 1500], 200),
-  street("boardwalk", "Boardwalk", "Dark Blue", 400, 200, [50, 200, 600, 1400, 1700, 2000], 200),
+  street(
+    "mediterranean-avenue",
+    "Mediterranean Avenue",
+    "Purple",
+    60,
+    30,
+    [2, 10, 30, 90, 160, 250],
+    50
+  ),
+  street(
+    "baltic-avenue",
+    "Baltic Avenue",
+    "Purple",
+    60,
+    30,
+    [4, 20, 60, 180, 320, 450],
+    50
+  ),
+  street(
+    "oriental-avenue",
+    "Oriental Avenue",
+    "Light Blue",
+    100,
+    50,
+    [6, 30, 90, 270, 400, 550],
+    50
+  ),
+  street(
+    "vermont-avenue",
+    "Vermont Avenue",
+    "Light Blue",
+    100,
+    50,
+    [6, 30, 90, 270, 400, 550],
+    50
+  ),
+  street(
+    "connecticut-avenue",
+    "Connecticut Avenue",
+    "Light Blue",
+    120,
+    60,
+    [8, 40, 100, 300, 450, 600],
+    50
+  ),
+  street(
+    "st-charles-place",
+    "St. Charles Place",
+    "Pink",
+    140,
+    70,
+    [10, 50, 150, 450, 625, 750],
+    100
+  ),
+  street(
+    "states-avenue",
+    "States Avenue",
+    "Pink",
+    140,
+    70,
+    [10, 50, 150, 450, 625, 750],
+    100
+  ),
+  street(
+    "virginia-avenue",
+    "Virginia Avenue",
+    "Pink",
+    160,
+    80,
+    [12, 60, 180, 500, 700, 900],
+    100
+  ),
+  street(
+    "st-james-place",
+    "St. James Place",
+    "Orange",
+    180,
+    90,
+    [14, 70, 200, 550, 750, 950],
+    100
+  ),
+  street(
+    "tennessee-avenue",
+    "Tennessee Avenue",
+    "Orange",
+    180,
+    90,
+    [14, 70, 200, 550, 750, 950],
+    100
+  ),
+  street(
+    "new-york-avenue",
+    "New York Avenue",
+    "Orange",
+    200,
+    100,
+    [16, 80, 220, 600, 800, 1000],
+    100
+  ),
+  street(
+    "kentucky-avenue",
+    "Kentucky Avenue",
+    "Red",
+    220,
+    110,
+    [18, 90, 250, 700, 875, 1050],
+    150
+  ),
+  street(
+    "indiana-avenue",
+    "Indiana Avenue",
+    "Red",
+    220,
+    110,
+    [18, 90, 250, 700, 875, 1050],
+    150
+  ),
+  street(
+    "illinois-avenue",
+    "Illinois Avenue",
+    "Red",
+    240,
+    120,
+    [20, 100, 300, 750, 925, 1100],
+    150
+  ),
+  street(
+    "atlantic-avenue",
+    "Atlantic Avenue",
+    "Yellow",
+    260,
+    130,
+    [22, 110, 330, 800, 975, 1150],
+    150
+  ),
+  street(
+    "ventnor-avenue",
+    "Ventnor Avenue",
+    "Yellow",
+    260,
+    130,
+    [22, 110, 330, 800, 975, 1150],
+    150
+  ),
+  street(
+    "marvin-gardens",
+    "Marvin Gardens",
+    "Yellow",
+    280,
+    140,
+    [24, 120, 360, 850, 1025, 1200],
+    150
+  ),
+  street(
+    "pacific-avenue",
+    "Pacific Avenue",
+    "Green",
+    300,
+    150,
+    [26, 130, 390, 900, 1100, 1275],
+    200
+  ),
+  street(
+    "north-carolina-avenue",
+    "North Carolina Avenue",
+    "Green",
+    300,
+    150,
+    [26, 130, 390, 900, 1100, 1275],
+    200
+  ),
+  street(
+    "pennsylvania-avenue",
+    "Pennsylvania Avenue",
+    "Green",
+    320,
+    160,
+    [28, 150, 450, 1000, 1200, 1400],
+    200
+  ),
+  street(
+    "park-place",
+    "Park Place",
+    "Dark Blue",
+    350,
+    175,
+    [35, 175, 500, 1100, 1300, 1500],
+    200
+  ),
+  street(
+    "boardwalk",
+    "Boardwalk",
+    "Dark Blue",
+    400,
+    200,
+    [50, 200, 600, 1400, 1700, 2000],
+    200
+  ),
   railroad("reading-railroad", "Reading Railroad"),
   railroad("pennsylvania-railroad", "Pennsylvania Railroad"),
   railroad("b-and-o-railroad", "B. & O. Railroad"),
   railroad("short-line", "Short Line"),
   utility("electric-company", "Electric Company"),
   utility("water-works", "Water Works")
-];
+]
 
 export function calculateOpeningBid(property: Property): number {
-  return Math.ceil((property.retailValue * 0.25) / 10) * 10;
+  return Math.ceil((property.retailValue * 0.25) / 10) * 10
 }
 
-export function createPlayers(names: string[], startingCash = STARTING_CASH): Player[] {
+export function createPlayers(
+  names: string[],
+  startingCash = STARTING_CASH
+): Player[] {
   return names
     .map((name) => name.trim())
     .filter(Boolean)
@@ -120,15 +299,15 @@ export function createPlayers(names: string[], startingCash = STARTING_CASH): Pl
       name,
       remainingCash: startingCash,
       properties: []
-    }));
+    }))
 }
 
 export function buildEligiblePropertyPool(options: PoolOptions): Property[] {
   return MONOPOLY_PROPERTIES.filter((property) => {
-    if (property.category === "street") return true;
-    if (property.category === "railroad") return options.includeRailroads;
-    return options.includeUtilities;
-  });
+    if (property.category === "street") return true
+    if (property.category === "railroad") return options.includeRailroads
+    return options.includeUtilities
+  })
 }
 
 export function createPropertyDeck({
@@ -136,34 +315,39 @@ export function createPropertyDeck({
   count,
   random = Math.random
 }: {
-  pool: Property[];
-  count: number;
-  random?: () => number;
+  pool: Property[]
+  count: number
+  random?: () => number
 }): PropertyDeck {
   if (!Number.isInteger(count) || count < 1 || count > pool.length) {
-    throw new Error("Property count must be between 1 and the eligible pool size.");
+    throw new Error(
+      "Property count must be between 1 and the eligible pool size."
+    )
   }
 
-  const shuffled = [...pool];
+  const shuffled = [...pool]
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1));
-    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+    const swapIndex = Math.floor(random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [
+      shuffled[swapIndex],
+      shuffled[index]
+    ]
   }
 
   return {
     revealed: [],
     hidden: shuffled.slice(0, count)
-  };
+  }
 }
 
 export function revealNextProperty(deck: PropertyDeck): {
-  deck: PropertyDeck;
-  property: Property | null;
+  deck: PropertyDeck
+  property: Property | null
 } {
-  const [property, ...remainingHidden] = deck.hidden;
+  const [property, ...remainingHidden] = deck.hidden
 
   if (!property) {
-    return { deck, property: null };
+    return { deck, property: null }
   }
 
   return {
@@ -172,12 +356,16 @@ export function revealNextProperty(deck: PropertyDeck): {
       revealed: [...deck.revealed, property],
       hidden: remainingHidden
     }
-  };
+  }
 }
 
-export function createAscendingAuction(players: Player[], increment: number, openingBid = 0): AscendingAuction {
-  validateIncrement(increment);
-  validateBidAmount(openingBid, STARTING_CASH, increment);
+export function createAscendingAuction(
+  players: Player[],
+  increment: number,
+  openingBid = 0
+): AscendingAuction {
+  validateIncrement(increment)
+  validateBidAmount(openingBid, STARTING_CASH, increment)
 
   return {
     increment,
@@ -186,7 +374,7 @@ export function createAscendingAuction(players: Player[], increment: number, ope
     currentBidderId: null,
     status: "open",
     result: null
-  };
+  }
 }
 
 export function placeAscendingBid(
@@ -195,31 +383,39 @@ export function placeAscendingBid(
   amount: number,
   remainingCash = STARTING_CASH
 ): AscendingAuction {
-  assertAuctionOpen(auction);
+  assertAuctionOpen(auction)
 
   if (!auction.activeBidderIds.includes(playerId)) {
-    throw new Error("Passed bidders cannot place new bids.");
+    throw new Error("Passed bidders cannot place new bids.")
   }
 
-  validateBidAmount(amount, remainingCash, auction.increment);
+  validateBidAmount(amount, remainingCash, auction.increment)
 
   if (amount <= auction.currentBid) {
-    throw new Error("Bid must exceed the current bid.");
+    throw new Error("Bid must exceed the current bid.")
   }
 
   return {
     ...auction,
     currentBid: amount,
     currentBidderId: playerId
-  };
+  }
 }
 
-export function passAscendingBidder(auction: AscendingAuction, playerId: string): AscendingAuction {
-  assertAuctionOpen(auction);
+export function passAscendingBidder(
+  auction: AscendingAuction,
+  playerId: string
+): AscendingAuction {
+  assertAuctionOpen(auction)
 
-  const activeBidderIds = auction.activeBidderIds.filter((id) => id !== playerId);
+  const activeBidderIds = auction.activeBidderIds.filter(
+    (id) => id !== playerId
+  )
 
-  if (activeBidderIds.length === 1 && auction.currentBidderId === activeBidderIds[0]) {
+  if (
+    activeBidderIds.length === 1 &&
+    auction.currentBidderId === activeBidderIds[0]
+  ) {
     return {
       ...auction,
       activeBidderIds,
@@ -228,109 +424,129 @@ export function passAscendingBidder(auction: AscendingAuction, playerId: string)
         winnerId: auction.currentBidderId,
         price: auction.currentBid
       }
-    };
+    }
   }
 
-  if (activeBidderIds.length === 0 || (activeBidderIds.length === 1 && auction.currentBidderId === null)) {
+  if (
+    activeBidderIds.length === 0 ||
+    (activeBidderIds.length === 1 && auction.currentBidderId === null)
+  ) {
     return {
       ...auction,
       activeBidderIds,
       status: "skipped",
       result: { winnerId: null, price: 0 }
-    };
+    }
   }
 
   return {
     ...auction,
     activeBidderIds
-  };
+  }
 }
 
-export function skipCurrentProperty(auction: AscendingAuction): AscendingAuction {
-  assertAuctionOpen(auction);
+export function skipCurrentProperty(
+  auction: AscendingAuction
+): AscendingAuction {
+  assertAuctionOpen(auction)
 
   return {
     ...auction,
     activeBidderIds: [],
     status: "skipped",
     result: { winnerId: null, price: 0 }
-  };
+  }
 }
 
 export function resolveSilentAuction({
   bids,
   increment
 }: {
-  bids: SilentBid[];
-  increment: number;
+  bids: SilentBid[]
+  increment: number
 }): SilentAuctionResult {
-  validateIncrement(increment);
+  validateIncrement(increment)
 
-  const validBids = bids.filter((bid) => bid.openingBid > 0 || bid.maxBid > 0);
+  const validBids = bids.filter((bid) => bid.openingBid > 0 || bid.maxBid > 0)
 
   if (validBids.length === 0) {
-    return { status: "skipped", winnerId: null, price: 0, tiedPlayerIds: [] };
+    return { status: "skipped", winnerId: null, price: 0, tiedPlayerIds: [] }
   }
 
   for (const bid of validBids) {
-    validateBidAmount(bid.openingBid, bid.remainingCash, increment);
-    validateBidAmount(bid.maxBid, bid.remainingCash, increment);
+    validateBidAmount(bid.openingBid, bid.remainingCash, increment)
+    validateBidAmount(bid.maxBid, bid.remainingCash, increment)
     if (bid.maxBid < bid.openingBid) {
-      throw new Error("Maximum bid must be at least the opening bid.");
+      throw new Error("Maximum bid must be at least the opening bid.")
     }
   }
 
-  const sorted = [...validBids].sort((left, right) => right.maxBid - left.maxBid);
-  const highBid = sorted[0];
-  const tiedPlayerIds = sorted.filter((bid) => bid.maxBid === highBid.maxBid).map((bid) => bid.playerId);
+  const sorted = [...validBids].sort(
+    (left, right) => right.maxBid - left.maxBid
+  )
+  const highBid = sorted[0]
+  const tiedPlayerIds = sorted
+    .filter((bid) => bid.maxBid === highBid.maxBid)
+    .map((bid) => bid.playerId)
 
   if (tiedPlayerIds.length > 1) {
-    return { status: "tie", winnerId: null, price: 0, tiedPlayerIds };
+    return { status: "tie", winnerId: null, price: 0, tiedPlayerIds }
   }
 
-  const nextHighestMax = sorted[1]?.maxBid ?? 0;
-  const challengerPrice = nextHighestMax > 0 ? nextHighestMax + increment : 0;
-  const price = Math.min(highBid.maxBid, Math.max(highBid.openingBid, challengerPrice));
+  const nextHighestMax = sorted[1]?.maxBid ?? 0
+  const challengerPrice = nextHighestMax > 0 ? nextHighestMax + increment : 0
+  const price = Math.min(
+    highBid.maxBid,
+    Math.max(highBid.openingBid, challengerPrice)
+  )
 
   return {
     status: "sold",
     winnerId: highBid.playerId,
     price,
     tiedPlayerIds: []
-  };
+  }
 }
 
-export function assignProperty(players: Player[], property: Property, result: AuctionResult): Player[] {
+export function assignProperty(
+  players: Player[],
+  property: Property,
+  result: AuctionResult
+): Player[] {
   if (!result.winnerId) {
-    return players;
+    return players
   }
 
   return players.map((player) => {
     if (player.id !== result.winnerId) {
-      return player;
+      return player
     }
 
     return {
       ...player,
       remainingCash: player.remainingCash - result.price,
       properties: [...player.properties, property]
-    };
-  });
+    }
+  })
 }
 
-export function validateBidAmount(amount: number, remainingCash: number, increment: number): void {
-  validateIncrement(increment);
+export function validateBidAmount(
+  amount: number,
+  remainingCash: number,
+  increment: number
+): void {
+  validateIncrement(increment)
 
   if (!Number.isInteger(amount) || amount < 0) {
-    throw new Error("Bid must be a positive whole-dollar amount.");
+    throw new Error("Bid must be a positive whole-dollar amount.")
   }
 
   if (amount > remainingCash) {
-    throw new Error("Bid cannot exceed remaining cash.");
+    throw new Error("Bid cannot exceed remaining cash.")
   }
 
   if (amount > 0 && amount % increment !== 0) {
-    throw new Error("Bid must match the selected bid increment.");
+    throw new Error("Bid must match the selected bid increment.")
   }
 }
 
@@ -340,39 +556,45 @@ export function validateSetup({
   eligiblePool,
   increment
 }: {
-  players: Player[];
-  propertyCount: number;
-  eligiblePool: Property[];
-  increment: number;
+  players: Player[]
+  propertyCount: number
+  eligiblePool: Property[]
+  increment: number
 }): string[] {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   if (players.length < 2) {
-    errors.push("Add at least two players.");
+    errors.push("Add at least two players.")
   }
 
-  if (!Number.isInteger(propertyCount) || propertyCount < 1 || propertyCount > eligiblePool.length) {
-    errors.push("Choose a property count within the eligible pool size.");
+  if (
+    !Number.isInteger(propertyCount) ||
+    propertyCount < 1 ||
+    propertyCount > eligiblePool.length
+  ) {
+    errors.push("Choose a property count within the eligible pool size.")
   }
 
   try {
-    validateIncrement(increment);
+    validateIncrement(increment)
   } catch (error) {
-    errors.push(error instanceof Error ? error.message : "Choose a valid bid increment.");
+    errors.push(
+      error instanceof Error ? error.message : "Choose a valid bid increment."
+    )
   }
 
-  return errors;
+  return errors
 }
 
 function validateIncrement(increment: number): void {
   if (!Number.isInteger(increment) || increment < 1) {
-    throw new Error("Bid increment must be at least $1.");
+    throw new Error("Bid increment must be at least $1.")
   }
 }
 
 function assertAuctionOpen(auction: AscendingAuction): void {
   if (auction.status !== "open") {
-    throw new Error("Auction is already resolved.");
+    throw new Error("Auction is already resolved.")
   }
 }
 
@@ -395,7 +617,7 @@ function street(
     rent,
     houseCost,
     hotelCost: houseCost
-  };
+  }
 }
 
 function railroad(id: string, name: string): RailroadProperty {
@@ -406,7 +628,7 @@ function railroad(id: string, name: string): RailroadProperty {
     retailValue: 200,
     mortgage: 100,
     rentDescription: "Rent $25, $50, $100, or $200 depending on railroads owned"
-  };
+  }
 }
 
 function utility(id: string, name: string): UtilityProperty {
@@ -416,6 +638,7 @@ function utility(id: string, name: string): UtilityProperty {
     category: "utility",
     retailValue: 150,
     mortgage: 75,
-    rentDescription: "Rent 4x dice roll if one utility is owned; 10x if both are owned"
-  };
+    rentDescription:
+      "Rent 4x dice roll if one utility is owned; 10x if both are owned"
+  }
 }

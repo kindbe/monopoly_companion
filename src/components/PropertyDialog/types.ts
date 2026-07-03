@@ -1,6 +1,6 @@
-import type { Property } from "@/domain/bidding";
+import type { Property } from "@/domain/bidding"
 
 export type PropertyDialogProps = {
-  property: Property;
-  close: () => void;
-};
+  property: Property
+  close: () => void
+}

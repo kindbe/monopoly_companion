@@ -1,9 +1,18 @@
-import { cx } from "@/common/classNames";
-import { biddingLayoutClass, compactPrimaryActionClass, compactSecondaryActionClass, countdownClassBase, currentBidClass, finePrintClass, panelClass, propertyStageClass } from "@/common/uiClasses";
-import { PropertyCard } from "@/components/PropertyCard/PropertyCard";
-import { MiniPropertyCards } from "@/components/MiniPropertyCards/MiniPropertyCards";
-import { QUICK_BID_INCREMENTS, STARTING_CASH } from "@/domain/bidding";
-import type { PlayerBiddingScreenProps } from "@/components/PlayerBiddingScreen/types";
+import { cx } from "@/common/classNames"
+import {
+  biddingLayoutClass,
+  compactPrimaryActionClass,
+  compactSecondaryActionClass,
+  countdownClassBase,
+  currentBidClass,
+  finePrintClass,
+  panelClass,
+  propertyStageClass
+} from "@/common/uiClasses"
+import { PropertyCard } from "@/components/PropertyCard/PropertyCard"
+import { MiniPropertyCards } from "@/components/MiniPropertyCards/MiniPropertyCards"
+import { QUICK_BID_INCREMENTS, STARTING_CASH } from "@/domain/bidding"
+import type { PlayerBiddingScreenProps } from "@/components/PlayerBiddingScreen/types"
 
 export function PlayerBiddingScreen({
   currentProperty,
@@ -25,7 +34,7 @@ export function PlayerBiddingScreen({
     countdownRemaining <= 5 &&
       countdownRemaining > 0 &&
       "animate-[urgent-pulse_900ms_ease-in-out_infinite] border-rose-200 text-rose-600 dark:border-rose-300/35 dark:text-rose-300"
-  );
+  )
   return (
     <div className={biddingLayoutClass}>
       <section className={propertyStageClass}>
@@ -45,13 +54,19 @@ export function PlayerBiddingScreen({
       </section>
       <section className={`${panelClass} grid content-start gap-3`}>
         {roundMessage ? <p role="status">{roundMessage}</p> : null}
-        <p className={currentBidClass}>Current bid: ${currentBid}{currentBidderName ? ` by ${currentBidderName}` : ""}</p>
+        <p className={currentBidClass}>
+          Current bid: ${currentBid}
+          {currentBidderName ? ` by ${currentBidderName}` : ""}
+        </p>
         <p className={finePrintClass}>Bids remaining: {remainingBidCount}</p>
         <div className="grid items-stretch gap-2.5 md:grid-cols-[minmax(150px,1fr)_minmax(170px,1.15fr)]">
           <p className="mt-2.5 grid min-h-24 place-items-center rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-center font-black text-emerald-800 shadow-inner shadow-emerald-100/60 transition duration-200 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200 dark:shadow-none">
             Your cash: ${remainingCash} / ${STARTING_CASH}
           </p>
-          <div className="grid grid-cols-2 gap-2 [&>button]:min-w-0" data-testid="player-quick-bids">
+          <div
+            className="grid grid-cols-2 gap-2 [&>button]:min-w-0"
+            data-testid="player-quick-bids"
+          >
             {QUICK_BID_INCREMENTS.map((bidIncrement) => (
               <button
                 type="button"
@@ -65,16 +80,24 @@ export function PlayerBiddingScreen({
             ))}
           </div>
         </div>
-        <button type="button" className={`${compactSecondaryActionClass} w-full`} disabled={hasSkipped} onClick={skip}>
+        <button
+          type="button"
+          className={`${compactSecondaryActionClass} w-full`}
+          disabled={hasSkipped}
+          onClick={skip}
+        >
           {hasSkipped ? "Skipped this round" : "Skip"}
         </button>
         <h3>Your properties</h3>
         {wonProperties.length ? (
-          <MiniPropertyCards properties={wonProperties} inspectProperty={inspectProperty} />
+          <MiniPropertyCards
+            properties={wonProperties}
+            inspectProperty={inspectProperty}
+          />
         ) : (
           <p className={finePrintClass}>No properties won</p>
         )}
       </section>
     </div>
-  );
+  )
 }

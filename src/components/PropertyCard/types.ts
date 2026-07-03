@@ -1,5 +1,5 @@
-import type { Property } from "@/domain/bidding";
+import type { Property } from "@/domain/bidding"
 
 export type PropertyCardProps = {
-  property: Property;
-};
+  property: Property
+}
