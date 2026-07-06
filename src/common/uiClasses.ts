@@ -16,7 +16,7 @@ export const buttonBaseClass =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-violet-200 px-4 py-2.5 font-bold shadow-sm shadow-violet-950/10 transition duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md hover:shadow-violet-950/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface active:translate-y-0 disabled:pointer-events-none disabled:opacity-100 dark:border-violet-400/30 dark:shadow-black/25"
 export const primaryActionClass = `${buttonBaseClass} border-action bg-action text-action-ink hover:border-action-hover hover:bg-action-hover disabled:border-action-disabled disabled:bg-action-disabled disabled:text-action-disabled-ink`
 export const compactPrimaryActionClass = `${primaryActionClass} min-w-0 px-2 sm:px-4`
-export const secondaryActionClass = `${buttonBaseClass} bg-surface-raised text-ink hover:bg-violet-50 dark:hover:bg-violet-950/40`
+export const secondaryActionClass = `${buttonBaseClass} bg-surface-raised text-ink hover:bg-violet-50 disabled:border-violet-100 disabled:bg-surface disabled:text-ink-muted dark:hover:bg-violet-950/40 dark:disabled:border-violet-400/20`
 export const compactSecondaryActionClass = `${secondaryActionClass} min-w-0 px-2 sm:px-4`
 export const themeToggleClass =
   "inline-grid min-h-11 min-w-11 place-items-center rounded-md p-2 text-ink transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
