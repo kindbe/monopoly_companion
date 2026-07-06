@@ -242,7 +242,7 @@ describe("App", () => {
     )
   })
 
-  it("falls back from host lobby to local setup and completes a skipped one-property auction", async () => {
+  it("shows an error and stays in the host lobby when bidding starts without an open connection", async () => {
     vi.stubGlobal(
       "WebSocket",
       class extends FakeSocket {
@@ -252,21 +252,17 @@ describe("App", () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await enterLocalSetup(user)
-    await user.clear(screen.getByLabelText(/property count/i))
-    await user.type(screen.getByLabelText(/property count/i), "1")
-    await user.click(screen.getByRole("button", { name: /^start bidding$/i }))
+    await attemptStartWithoutOpenConnection(user)
 
     expect(
-      screen.getByRole("heading", { name: /ascending auction/i })
+      screen.getByRole("heading", { name: /host lobby/i })
     ).toBeInTheDocument()
-
-    await user.click(screen.getByRole("button", { name: /skip no-bid/i }))
-
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /multiplayer connection is not ready/i
+    )
     expect(
-      await screen.findByRole("heading", { name: /setup complete/i })
-    ).toBeInTheDocument()
-    expect(screen.getByText(/1 properties resolved/i)).toBeInTheDocument()
+      screen.queryByRole("button", { name: /^start bidding$/i })
+    ).not.toBeInTheDocument()
   })
 
   it("requires a join code and name for player join", async () => {
@@ -517,7 +513,9 @@ class FakeSocket {
   }
 }
 
-async function enterLocalSetup(user: ReturnType<typeof userEvent.setup>) {
+async function attemptStartWithoutOpenConnection(
+  user: ReturnType<typeof userEvent.setup>
+) {
   await user.click(screen.getByRole("button", { name: /host multiplayer/i }))
   await user.type(screen.getByLabelText(/host name/i), "Host")
   await user.click(screen.getByRole("button", { name: /create session/i }))

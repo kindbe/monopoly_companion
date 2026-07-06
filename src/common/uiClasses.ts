@@ -29,8 +29,6 @@ export const finePrintClass = "mt-2.5 text-slate-600 dark:text-violet-200/76"
 export const currentBidClass = finePrintClass
 export const biddingLayoutClass =
   "grid gap-3.5 md:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]"
-export const modeButtonClass =
-  "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-violet-200 bg-white/85 px-3 py-2 font-extrabold text-violet-900 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 aria-pressed:border-emerald-400 aria-pressed:bg-emerald-50 aria-pressed:text-emerald-800 dark:border-violet-400/25 dark:bg-[#211c3c] dark:text-violet-50 dark:hover:bg-[#2a2350] dark:aria-pressed:border-emerald-300 dark:aria-pressed:bg-emerald-400/15 dark:aria-pressed:text-emerald-200"
 export const checkboxClass = "size-4 accent-emerald-500 transition duration-200"
 export const propertyStageClass =
   "grid min-h-[260px] content-center gap-3 rounded-lg border border-violet-200 bg-[linear-gradient(145deg,#ffffff_0%,#f3efff_52%,#ecfff6_100%)] p-4 shadow-[0_18px_44px_rgba(76,58,139,0.13)] ring-1 ring-white/80 dark:border-violet-400/25 dark:bg-[linear-gradient(145deg,#19172c_0%,#151b2d_52%,#10251d_100%)] dark:shadow-[0_18px_44px_rgba(0,0,0,0.30)] dark:ring-white/5 md:min-h-[420px]"

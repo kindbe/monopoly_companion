@@ -10,7 +10,6 @@ describe("Tailwind stylesheet", () => {
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));`)
     expect(css).toMatch(/@keyframes app-enter/)
     expect(css).toMatch(/@keyframes property-reveal/)
-    expect(css).toMatch(/@keyframes bid-pop/)
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)/)
   })
 })

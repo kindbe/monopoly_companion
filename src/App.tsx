@@ -1,44 +1,19 @@
 import { Moon, Sun } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
-import {
-  assignProperty,
-  buildEligiblePropertyPool,
-  calculateOpeningBid,
-  createAscendingAuction,
-  createPlayers,
-  createPropertyDeck,
-  passAscendingBidder,
-  placeAscendingBid,
-  resolveSilentAuction,
-  revealNextProperty,
-  skipCurrentProperty,
-  type AscendingAuction,
-  type Player,
-  type Property,
-  type PropertyDeck,
-  type SilentBid
-} from "@/domain/bidding"
-import type {
-  BiddingMode,
-  CompletedBid,
-  Phase,
-  Theme
-} from "@/common/auctionTypes"
+import { buildEligiblePropertyPool, type Property } from "@/domain/bidding"
+import type { Phase, Theme } from "@/common/auctionTypes"
 import {
   activeScreenClass,
   appShellClass,
   mastheadClass,
   themeToggleClass
 } from "@/common/uiClasses"
-import { BiddingScreen } from "@/components/BiddingScreen/BiddingScreen"
-import { CompleteScreen } from "@/components/CompleteScreen/CompleteScreen"
 import { HostLobbyScreen } from "@/components/HostLobbyScreen/HostLobbyScreen"
 import { HostSetupScreen } from "@/components/HostSetupScreen/HostSetupScreen"
 import { LandingScreen } from "@/components/LandingScreen/LandingScreen"
 import { PlayerBiddingScreen } from "@/components/PlayerBiddingScreen/PlayerBiddingScreen"
 import { PlayerJoinScreen } from "@/components/PlayerJoinScreen/PlayerJoinScreen"
 import { PropertyDialog } from "@/components/PropertyDialog/PropertyDialog"
-import { SetupScreen } from "@/components/SetupScreen/SetupScreen"
 import type { HostState, PlayerState, ServerEvent } from "@/shared/multiplayer"
 import {
   browserSupportsWebRtc,
@@ -50,38 +25,15 @@ import {
   type MultiplayerTransport
 } from "@/shared/multiplayerTransport"
 
-const DEFAULT_PLAYER_NAMES = ["Joelle", "Isaac", "Durd"]
-
 export default function App() {
   const [phase, setPhase] = useState<Phase>("landing")
-  const [mode, setMode] = useState<BiddingMode>("ascending")
   const [includeRailroads, setIncludeRailroads] = useState(false)
   const [includeUtilities, setIncludeUtilities] = useState(false)
   const [propertyCount, setPropertyCount] = useState(10)
-  const [increment, setIncrement] = useState(10)
   const [bidDeadline, setBidDeadline] = useState(10)
   const [maxBidsPerPlayer, setMaxBidsPerPlayer] = useState(3)
-  const [playerNames, setPlayerNames] = useState(DEFAULT_PLAYER_NAMES)
-  const [players, setPlayers] = useState<Player[]>(() =>
-    createPlayers(DEFAULT_PLAYER_NAMES)
-  )
-  const [deck, setDeck] = useState<PropertyDeck>({ revealed: [], hidden: [] })
-  const [currentProperty, setCurrentProperty] = useState<Property | null>(null)
-  const [ascendingAuction, setAscendingAuction] =
-    useState<AscendingAuction | null>(null)
-  const [silentBids, setSilentBids] = useState<
-    Record<string, { openingBid: number; maxBid: number }>
-  >({})
-  const [tiedPlayerIds, setTiedPlayerIds] = useState<string[]>([])
-  const [completedBids, setCompletedBids] = useState<CompletedBid[]>([])
-  const [message, setMessage] = useState("")
   const [selectedWonProperty, setSelectedWonProperty] =
     useState<Property | null>(null)
-  const [bidFeedback, setBidFeedback] = useState<{
-    playerId: string
-    increment: number
-  } | null>(null)
-  const [lastWinnerName, setLastWinnerName] = useState<string | null>(null)
   const [joinCode, setJoinCode] = useState("TABLE1")
   const [hostName, setHostName] = useState("")
   const [playerJoinCode, setPlayerJoinCode] = useState("")
@@ -137,228 +89,9 @@ export default function App() {
     return () => window.clearTimeout(timeoutId)
   }, [phase, playerState?.currentProperty?.id, playerState?.phase])
 
-  function updatePlayerName(index: number, name: string) {
-    setPlayerNames((names) =>
-      names.map((current, currentIndex) =>
-        currentIndex === index ? name : current
-      )
-    )
-  }
-
-  function addPlayer() {
-    setPlayerNames((names) => [...names, `Player ${names.length + 1}`])
-  }
-
-  function removePlayer(index: number) {
-    setPlayerNames((names) =>
-      names.filter((_, currentIndex) => currentIndex !== index)
-    )
-  }
-
-  function startBidding() {
-    const nextPlayers = createPlayers(playerNames)
-    if (nextPlayers.length < 2) {
-      setMessage("Add at least two players.")
-      return
-    }
-
-    const nextDeck = createPropertyDeck({
-      pool: eligiblePool,
-      count: cappedPropertyCount
-    })
-    const revealed = revealNextProperty(nextDeck)
-    setPlayers(nextPlayers)
-    setDeck(revealed.deck)
-    setCurrentProperty(revealed.property)
-    setAscendingAuction(
-      revealed.property && mode === "ascending"
-        ? createAscendingAuction(
-            nextPlayers,
-            increment,
-            calculateOpeningBid(revealed.property)
-          )
-        : null
-    )
-    setSilentBids(
-      Object.fromEntries(
-        nextPlayers.map((player) => [
-          player.id,
-          {
-            openingBid: revealed.property
-              ? calculateOpeningBid(revealed.property)
-              : 0,
-            maxBid: 0
-          }
-        ])
-      )
-    )
-    setTiedPlayerIds([])
-    setCompletedBids([])
-    setMessage("")
-    setPhase("bidding")
-  }
-
-  function revealFollowingProperty(
-    nextPlayers = players,
-    nextCompletedBids = completedBids,
-    nextMessage = ""
-  ) {
-    const revealed = revealNextProperty(deck)
-    setDeck(revealed.deck)
-    setCurrentProperty(revealed.property)
-    setAscendingAuction(
-      revealed.property && mode === "ascending"
-        ? createAscendingAuction(
-            nextPlayers,
-            increment,
-            calculateOpeningBid(revealed.property)
-          )
-        : null
-    )
-    setSilentBids(
-      Object.fromEntries(
-        nextPlayers.map((player) => [
-          player.id,
-          {
-            openingBid: revealed.property
-              ? calculateOpeningBid(revealed.property)
-              : 0,
-            maxBid: 0
-          }
-        ])
-      )
-    )
-    setTiedPlayerIds([])
-    setMessage(nextMessage)
-
-    if (!revealed.property) {
-      setCompletedBids(nextCompletedBids)
-      setPhase("complete")
-    }
-  }
-
-  function recordResult(
-    winnerId: string | null,
-    price: number,
-    nextMessage = ""
-  ) {
-    if (!currentProperty) return
-
-    const result = { winnerId, price }
-    const winnerName =
-      players.find((player) => player.id === winnerId)?.name ?? null
-    const nextPlayers = winnerId
-      ? assignProperty(players, currentProperty, result)
-      : players
-    const nextCompletedBids = [
-      ...completedBids,
-      { property: currentProperty, winnerId, price }
-    ]
-    setPlayers(nextPlayers)
-    setCompletedBids(nextCompletedBids)
-    setLastWinnerName(winnerName)
-    if (winnerName) {
-      playSound("win")
-    }
-    revealFollowingProperty(nextPlayers, nextCompletedBids, nextMessage)
-  }
-
-  function placeBid(playerId: string, bidIncrement: number) {
-    if (!ascendingAuction) return
-    const player = players.find((candidate) => candidate.id === playerId)
-    if (!player) return
-
-    try {
-      setAscendingAuction(
-        placeAscendingBid(
-          ascendingAuction,
-          playerId,
-          ascendingAuction.currentBid + bidIncrement,
-          player.remainingCash
-        )
-      )
-      setBidFeedback({ playerId, increment: bidIncrement })
-      playSound("bid")
-      setMessage("")
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Bid could not be placed."
-      )
-    }
-  }
-
-  function passBidder(playerId: string) {
-    if (!ascendingAuction) return
-    const nextAuction = passAscendingBidder(ascendingAuction, playerId)
-    setAscendingAuction(nextAuction)
-
-    if (nextAuction.result) {
-      const nextMessage =
-        nextAuction.status === "skipped"
-          ? "All players skipped. Moving to the next property."
-          : ""
-      recordResult(
-        nextAuction.result.winnerId,
-        nextAuction.result.price,
-        nextMessage
-      )
-    }
-  }
-
-  function skipProperty() {
-    if (mode === "ascending" && ascendingAuction) {
-      skipCurrentProperty(ascendingAuction)
-    }
-    recordResult(null, 0)
-  }
-
-  function submitSilentAuction() {
-    const participatingIds =
-      tiedPlayerIds.length > 0
-        ? tiedPlayerIds
-        : players.map((player) => player.id)
-    const bids: SilentBid[] = players
-      .filter((player) => participatingIds.includes(player.id))
-      .map((player) => ({
-        playerId: player.id,
-        openingBid: silentBids[player.id]?.openingBid ?? 0,
-        maxBid: silentBids[player.id]?.maxBid ?? 0,
-        remainingCash: player.remainingCash
-      }))
-
-    try {
-      const result = resolveSilentAuction({ bids, increment })
-      if (result.status === "tie") {
-        setTiedPlayerIds(result.tiedPlayerIds)
-        setSilentBids(
-          Object.fromEntries(
-            result.tiedPlayerIds.map((playerId) => [
-              playerId,
-              { openingBid: 0, maxBid: 0 }
-            ])
-          )
-        )
-        setMessage("Top bids tied. Run sudden-death re-bid.")
-        return
-      }
-
-      recordResult(result.winnerId, result.price)
-    } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Silent auction could not be resolved."
-      )
-    }
-  }
-
   function restart() {
     setPhase("landing")
-    setPlayers(createPlayers(DEFAULT_PLAYER_NAMES))
-    setCurrentProperty(null)
-    setDeck({ revealed: [], hidden: [] })
-    setCompletedBids([])
-    setMessage("")
+    setMultiplayerMessage("")
   }
 
   function hostMultiplayer() {
@@ -382,7 +115,7 @@ export default function App() {
         includeRailroads,
         includeUtilities,
         propertyCount: cappedPropertyCount,
-        increment,
+        increment: 10,
         countdownSeconds: e2eCountdownSeconds() ?? bidDeadline,
         maxBidsPerPlayer
       }
@@ -418,7 +151,7 @@ export default function App() {
       transportRef.current.startBidding(hostState.joinCode)
       return
     }
-    setPhase("setup")
+    setMultiplayerMessage("Multiplayer connection is not ready. Try again.")
   }
 
   function submitMultiplayerBid(bidIncrement: number) {
@@ -549,64 +282,6 @@ export default function App() {
             message={multiplayerMessage}
             createSession={createMultiplayerSession}
             back={restart}
-          />
-        ) : null}
-
-        {phase === "setup" ? (
-          <SetupScreen
-            mode={mode}
-            setMode={setMode}
-            includeRailroads={includeRailroads}
-            setIncludeRailroads={setIncludeRailroads}
-            includeUtilities={includeUtilities}
-            setIncludeUtilities={setIncludeUtilities}
-            propertyCount={cappedPropertyCount}
-            setPropertyCount={setPropertyCount}
-            maxProperties={eligiblePool.length}
-            increment={increment}
-            setIncrement={setIncrement}
-            bidDeadline={bidDeadline}
-            setBidDeadline={setBidDeadline}
-            playerNames={playerNames}
-            updatePlayerName={updatePlayerName}
-            addPlayer={addPlayer}
-            removePlayer={removePlayer}
-            startBidding={startBidding}
-            hostMultiplayer={hostMultiplayer}
-            joinMultiplayer={joinMultiplayer}
-            message={message}
-          />
-        ) : null}
-
-        {phase === "bidding" && currentProperty ? (
-          <BiddingScreen
-            mode={mode}
-            players={players}
-            deck={deck}
-            currentProperty={currentProperty}
-            currentIndex={completedBids.length + 1}
-            totalCount={completedBids.length + 1 + deck.hidden.length}
-            increment={increment}
-            ascendingAuction={ascendingAuction}
-            silentBids={silentBids}
-            tiedPlayerIds={tiedPlayerIds}
-            setSilentBids={setSilentBids}
-            placeBid={placeBid}
-            passBidder={passBidder}
-            skipProperty={skipProperty}
-            submitSilentAuction={submitSilentAuction}
-            message={message}
-            bidFeedback={bidFeedback}
-          />
-        ) : null}
-
-        {phase === "complete" ? (
-          <CompleteScreen
-            players={players}
-            completedBids={completedBids}
-            restart={restart}
-            inspectProperty={setSelectedWonProperty}
-            lastWinnerName={lastWinnerName}
           />
         ) : null}
 

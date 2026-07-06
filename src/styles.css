@@ -22,21 +22,6 @@
   }
 }
 
-@keyframes bid-pop {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.94);
-  }
-  45% {
-    opacity: 1;
-    transform: translateY(-2px) scale(1.04);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 @keyframes overlay-in {
   from {
     opacity: 0;

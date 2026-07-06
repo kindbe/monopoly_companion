@@ -45,32 +45,9 @@ export type PropertyDeck = {
   hidden: Property[]
 }
 
-export type AscendingAuction = {
-  increment: number
-  activeBidderIds: string[]
-  currentBid: number
-  currentBidderId: string | null
-  status: "open" | "sold" | "skipped"
-  result: AuctionResult | null
-}
-
 export type AuctionResult = {
   winnerId: string | null
   price: number
-}
-
-export type SilentBid = {
-  playerId: string
-  openingBid: number
-  maxBid: number
-  remainingCash: number
-}
-
-export type SilentAuctionResult = {
-  status: "sold" | "tie" | "skipped"
-  winnerId: string | null
-  price: number
-  tiedPlayerIds: string[]
 }
 
 export const STARTING_CASH = 1500
@@ -359,155 +336,6 @@ export function revealNextProperty(deck: PropertyDeck): {
   }
 }
 
-export function createAscendingAuction(
-  players: Player[],
-  increment: number,
-  openingBid = 0
-): AscendingAuction {
-  validateIncrement(increment)
-  validateBidAmount(openingBid, STARTING_CASH, increment)
-
-  return {
-    increment,
-    activeBidderIds: players.map((player) => player.id),
-    currentBid: openingBid,
-    currentBidderId: null,
-    status: "open",
-    result: null
-  }
-}
-
-export function placeAscendingBid(
-  auction: AscendingAuction,
-  playerId: string,
-  amount: number,
-  remainingCash = STARTING_CASH
-): AscendingAuction {
-  assertAuctionOpen(auction)
-
-  if (!auction.activeBidderIds.includes(playerId)) {
-    throw new Error("Passed bidders cannot place new bids.")
-  }
-
-  validateBidAmount(amount, remainingCash, auction.increment)
-
-  if (amount <= auction.currentBid) {
-    throw new Error("Bid must exceed the current bid.")
-  }
-
-  return {
-    ...auction,
-    currentBid: amount,
-    currentBidderId: playerId
-  }
-}
-
-export function passAscendingBidder(
-  auction: AscendingAuction,
-  playerId: string
-): AscendingAuction {
-  assertAuctionOpen(auction)
-
-  const activeBidderIds = auction.activeBidderIds.filter(
-    (id) => id !== playerId
-  )
-
-  if (
-    activeBidderIds.length === 1 &&
-    auction.currentBidderId === activeBidderIds[0]
-  ) {
-    return {
-      ...auction,
-      activeBidderIds,
-      status: "sold",
-      result: {
-        winnerId: auction.currentBidderId,
-        price: auction.currentBid
-      }
-    }
-  }
-
-  if (
-    activeBidderIds.length === 0 ||
-    (activeBidderIds.length === 1 && auction.currentBidderId === null)
-  ) {
-    return {
-      ...auction,
-      activeBidderIds,
-      status: "skipped",
-      result: { winnerId: null, price: 0 }
-    }
-  }
-
-  return {
-    ...auction,
-    activeBidderIds
-  }
-}
-
-export function skipCurrentProperty(
-  auction: AscendingAuction
-): AscendingAuction {
-  assertAuctionOpen(auction)
-
-  return {
-    ...auction,
-    activeBidderIds: [],
-    status: "skipped",
-    result: { winnerId: null, price: 0 }
-  }
-}
-
-export function resolveSilentAuction({
-  bids,
-  increment
-}: {
-  bids: SilentBid[]
-  increment: number
-}): SilentAuctionResult {
-  validateIncrement(increment)
-
-  const validBids = bids.filter((bid) => bid.openingBid > 0 || bid.maxBid > 0)
-
-  if (validBids.length === 0) {
-    return { status: "skipped", winnerId: null, price: 0, tiedPlayerIds: [] }
-  }
-
-  for (const bid of validBids) {
-    validateBidAmount(bid.openingBid, bid.remainingCash, increment)
-    validateBidAmount(bid.maxBid, bid.remainingCash, increment)
-    if (bid.maxBid < bid.openingBid) {
-      throw new Error("Maximum bid must be at least the opening bid.")
-    }
-  }
-
-  const sorted = [...validBids].sort(
-    (left, right) => right.maxBid - left.maxBid
-  )
-  const highBid = sorted[0]
-  const tiedPlayerIds = sorted
-    .filter((bid) => bid.maxBid === highBid.maxBid)
-    .map((bid) => bid.playerId)
-
-  if (tiedPlayerIds.length > 1) {
-    return { status: "tie", winnerId: null, price: 0, tiedPlayerIds }
-  }
-
-  const nextHighestMax = sorted[1]?.maxBid ?? 0
-  const challengerPrice = nextHighestMax > 0 ? nextHighestMax + increment : 0
-  const price = Math.min(
-    highBid.maxBid,
-    Math.max(highBid.openingBid, challengerPrice)
-  )
-
-  return {
-    status: "sold",
-    winnerId: highBid.playerId,
-    price,
-    tiedPlayerIds: []
-  }
-}
-
 export function assignProperty(
   players: Player[],
   property: Property,
@@ -550,51 +378,9 @@ export function validateBidAmount(
   }
 }
 
-export function validateSetup({
-  players,
-  propertyCount,
-  eligiblePool,
-  increment
-}: {
-  players: Player[]
-  propertyCount: number
-  eligiblePool: Property[]
-  increment: number
-}): string[] {
-  const errors: string[] = []
-
-  if (players.length < 2) {
-    errors.push("Add at least two players.")
-  }
-
-  if (
-    !Number.isInteger(propertyCount) ||
-    propertyCount < 1 ||
-    propertyCount > eligiblePool.length
-  ) {
-    errors.push("Choose a property count within the eligible pool size.")
-  }
-
-  try {
-    validateIncrement(increment)
-  } catch (error) {
-    errors.push(
-      error instanceof Error ? error.message : "Choose a valid bid increment."
-    )
-  }
-
-  return errors
-}
-
 function validateIncrement(increment: number): void {
   if (!Number.isInteger(increment) || increment < 1) {
     throw new Error("Bid increment must be at least $1.")
-  }
-}
-
-function assertAuctionOpen(auction: AscendingAuction): void {
-  if (auction.status !== "open") {
-    throw new Error("Auction is already resolved.")
   }
 }
 
