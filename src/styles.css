@@ -1,6 +1,54 @@
 @import "tailwindcss";
 
+@theme {
+  --color-surface: #f7f4ff;
+  --color-surface-raised: #ffffff;
+  --color-ink: #0f172a;
+  --color-ink-muted: #475569;
+  --color-accent: #7c3aed;
+  --color-action: #047857;
+  --color-action-hover: #065f46;
+  --color-action-disabled: #e2e8f0;
+  --color-action-disabled-ink: #334155;
+  --color-action-ink: #ffffff;
+  --color-focus: #059669;
+}
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+[data-theme="dark"] {
+  --color-surface: #121020;
+  --color-surface-raised: #1a1730;
+  --color-ink: #f5f3ff;
+  --color-ink-muted: #ddd6fe;
+  --color-accent: #c4b5fd;
+  --color-action: #10b981;
+  --color-action-hover: #34d399;
+  --color-action-disabled: #334155;
+  --color-action-disabled-ink: #f1f5f9;
+  --color-action-ink: #07130f;
+  --color-focus: #6ee7b7;
+}
+
+@layer base {
+  h1 {
+    font-size: clamp(1.75rem, 4.5vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1.02;
+  }
+
+  h2 {
+    font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+    font-weight: 750;
+    line-height: 1.15;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+}
 
 @keyframes app-enter {
   from {

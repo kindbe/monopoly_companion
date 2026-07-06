@@ -16,6 +16,15 @@ export function propertyAccent(property: Property) {
   return colors[property.colorGroup] ?? "#111827"
 }
 
+export function propertyBandText(property: Property) {
+  const accent = propertyAccent(property)
+  const darkText = "#111827"
+  const lightText = "#ffffff"
+  return contrastRatio(accent, darkText) >= contrastRatio(accent, lightText)
+    ? darkText
+    : lightText
+}
+
 export function sortPropertiesByDisplayValue(properties: Property[]) {
   return [...properties].sort((left, right) => {
     const groupDelta = propertyGroupRank(left) - propertyGroupRank(right)
@@ -24,6 +33,31 @@ export function sortPropertiesByDisplayValue(properties: Property[]) {
     if (valueDelta !== 0) return valueDelta
     return left.name.localeCompare(right.name)
   })
+}
+
+function contrastRatio(left: string, right: string) {
+  const leftLuminance = relativeLuminance(left)
+  const rightLuminance = relativeLuminance(right)
+  const lighter = Math.max(leftLuminance, rightLuminance)
+  const darker = Math.min(leftLuminance, rightLuminance)
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
+function relativeLuminance(hexColor: string) {
+  const [red, green, blue] = hexToRgb(hexColor).map((channel) => {
+    const normalized = channel / 255
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+function hexToRgb(hexColor: string) {
+  const normalized = hexColor.replace("#", "")
+  return [0, 2, 4].map((start) =>
+    Number.parseInt(normalized.slice(start, start + 2), 16)
+  )
 }
 
 export function groupWonProperties(properties: Property[]) {

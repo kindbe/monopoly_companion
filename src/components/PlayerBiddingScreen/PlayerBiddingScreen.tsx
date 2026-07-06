@@ -42,7 +42,7 @@ export function PlayerBiddingScreen({
           {currentProperty ? <PropertyCard property={currentProperty} /> : null}
           {roundMessage === "Skipped!" ? (
             <div
-              className="absolute inset-0 z-1 grid animate-[overlay-in_220ms_ease-out] rotate-[-7deg] place-items-center rounded-xl bg-violet-950/75 text-[clamp(2.4rem,9vw,5.4rem)] font-black uppercase tracking-[0.06em] text-white backdrop-blur-[2px] [text-shadow:0_4px_0_rgba(0,0,0,0.45)]"
+              className="absolute inset-0 z-1 grid animate-[overlay-in_220ms_ease-out] rotate-[-7deg] place-items-center rounded-xl bg-violet-950/75 text-[clamp(2.4rem,9vw,5.4rem)] font-bold uppercase tracking-[0.06em] text-white backdrop-blur-[2px] [text-shadow:0_4px_0_rgba(0,0,0,0.45)]"
               data-testid="skipped-overlay"
             >
               Skipped!
@@ -60,7 +60,7 @@ export function PlayerBiddingScreen({
         </p>
         <p className={finePrintClass}>Bids remaining: {remainingBidCount}</p>
         <div className="grid items-stretch gap-2.5 md:grid-cols-[minmax(150px,1fr)_minmax(170px,1.15fr)]">
-          <p className="mt-2.5 grid min-h-24 place-items-center rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-center font-black text-emerald-800 shadow-inner shadow-emerald-100/60 transition duration-200 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200 dark:shadow-none">
+          <p className="mt-2.5 grid min-h-24 place-items-center rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-center font-semibold text-emerald-800 shadow-sm shadow-emerald-950/10 transition duration-200 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200 dark:shadow-black/20">
             Your cash: ${remainingCash} / ${STARTING_CASH}
           </p>
           <div

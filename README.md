@@ -74,6 +74,18 @@ As players win properties, they accumulate under the "Properties won" section.  
 
 ![Property Details Overlay](docs/images/owned_property_overlay.png)
 
+<details>
+<summary>Dark mode screenshots</summary>
+
+![Dark landing screen](docs/images/landing_screen_dark.png)
+![Dark auction setup](docs/images/host_setup_dark.png)
+![Dark host lobby](docs/images/host_lobby_dark.png)
+![Dark session join](docs/images/session_join_dark.png)
+![Dark player bidding](docs/images/player_bidding_dark.png)
+![Dark property details overlay](docs/images/owned_property_overlay_dark.png)
+
+</details>
+
 Bidding continues until all of the properties have been won or skipped/ignored.  After that, it's up to the players to dole out the won properties, settle up with the bank, and play the real game!
 
 ## Development Approach
