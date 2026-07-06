@@ -29,7 +29,7 @@ export function HostLobbyScreen({
         <h2>Host Lobby</h2>
         <p className={kickerClass}>Join code</p>
         <div
-          className="rounded-md border border-violet-200 bg-white/95 p-4 text-3xl font-black tracking-[0.08em] text-violet-900 shadow-[0_12px_28px_rgba(76,58,139,0.12)] ring-1 ring-white/80 dark:border-violet-400/30 dark:bg-[#12182a] dark:text-emerald-200 dark:ring-white/5"
+          className="rounded-md border border-violet-200 bg-surface-raised p-4 text-3xl font-bold tracking-[0.08em] text-accent shadow-md shadow-violet-950/10 dark:border-violet-400/30 dark:shadow-black/25"
           data-testid="join-code"
         >
           {joinCode}

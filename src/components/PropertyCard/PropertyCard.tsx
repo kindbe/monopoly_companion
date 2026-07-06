@@ -1,12 +1,11 @@
 import type React from "react"
 import {
-  finePrintClass,
   propertyBandClass,
   propertyBodyClass,
   propertyCardClass,
   propertyTitleClass
 } from "@/common/uiClasses"
-import { propertyAccent } from "@/common/propertyDisplay"
+import { propertyAccent, propertyBandText } from "@/common/propertyDisplay"
 import type { PropertyCardProps } from "@/components/PropertyCard/types"
 
 export function PropertyCard({ property }: PropertyCardProps) {
@@ -14,7 +13,10 @@ export function PropertyCard({ property }: PropertyCardProps) {
     <article
       className={propertyCardClass}
       style={
-        { "--property-color": propertyAccent(property) } as React.CSSProperties
+        {
+          "--property-color": propertyAccent(property),
+          "--property-band-text": propertyBandText(property)
+        } as React.CSSProperties
       }
     >
       <div className={propertyBandClass}>
@@ -40,13 +42,13 @@ export function PropertyCard({ property }: PropertyCardProps) {
               <span>4 houses ${property.rent[4]}</span>
               <span>Hotel ${property.rent[5]}</span>
             </div>
-            <p className={finePrintClass}>
+            <p className="mt-2.5 font-normal text-slate-600">
               Houses ${property.houseCost} each. Hotel ${property.hotelCost}{" "}
               plus 4 houses.
             </p>
           </>
         ) : (
-          <p className="border-t border-[#1b1b18]/25 pt-1.5 font-extrabold">
+          <p className="border-t border-slate-900/25 pt-1.5 font-semibold">
             {property.rentDescription}
           </p>
         )}

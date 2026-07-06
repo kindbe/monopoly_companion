@@ -88,7 +88,8 @@ describe("App", () => {
       name: /switch to light mode/i
     })
     expect(themeToggle).toHaveAttribute("title", "Switch to light mode")
-    expect(themeToggle).toHaveClass("size-5")
+    expect(themeToggle).toHaveClass("min-h-11")
+    expect(themeToggle).toHaveClass("min-w-11")
     expect(themeToggle).not.toHaveTextContent(/switch/i)
 
     await user.click(themeToggle)
@@ -390,6 +391,7 @@ describe("App", () => {
       expect(card).toHaveStyle({ backgroundColor: "rgb(255, 255, 255)" })
       expect(card.style.backgroundImage).toContain("linear-gradient")
       expect(card.style.getPropertyValue("--property-color")).toMatch(/^#/)
+      expect(card.style.getPropertyValue("--property-band-text")).toMatch(/^#/)
     }
 
     await user.click(screen.getByRole("button", { name: /view boardwalk/i }))
