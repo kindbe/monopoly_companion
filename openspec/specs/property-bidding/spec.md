@@ -5,23 +5,19 @@ Define the setup-phase property bidding flow for assigning Monopoly properties b
 ## Requirements
 
 ### Requirement: Pre-game property bidding flow
-The system MUST provide a pre-game bidding flow that allows players to compete for Monopoly properties before the main game starts, including a multiplayer session flow where players bid from their own devices.
+The system MUST provide a pre-game bidding flow that allows players to compete for Monopoly properties before the main game starts. The multiplayer session flow, where each player bids from their own device, is the sole bidding flow.
 
 #### Scenario: Start bidding setup
-- **WHEN** players begin a new setup session
-- **THEN** the system SHALL present a bidding flow for the available properties before gameplay begins
+- **WHEN** a host begins a new setup session
+- **THEN** the system SHALL create a join-code-based multiplayer bidding flow where each player participates from their own device
 
 #### Scenario: Resolve property ownership
 - **WHEN** the bidding flow completes
-- **THEN** the system SHALL assign each available property to a player according to the bidding result
+- **THEN** the system SHALL have assigned each won property to a player according to the bidding results
 
 #### Scenario: Complete bidding summary
 - **WHEN** the bidding flow completes
-- **THEN** the system SHALL show each player's assigned properties and remaining starting cash
-
-#### Scenario: Multiplayer bidding setup
-- **WHEN** the host starts a multiplayer setup session
-- **THEN** the system SHALL create a join-code-based bidding flow where each player participates from their own device
+- **THEN** the system SHALL show each player their assigned properties and remaining starting cash
 
 ### Requirement: Configurable property pool
 The system MUST let the host configure which properties can appear in the bidding flow.
@@ -67,39 +63,6 @@ The system MUST use each player's Monopoly starting cash as the budget for setup
 #### Scenario: Deduct winning bid
 - **WHEN** a player wins a property
 - **THEN** the system SHALL deduct the winning bid from that player's remaining starting cash
-
-### Requirement: Configurable bid increment
-The system MUST let the host choose the bid increment used during bidding.
-
-#### Scenario: Apply bid increment
-- **WHEN** a bid is placed or computed
-- **THEN** the system SHALL validate or calculate it using the host-selected bid increment
-
-### Requirement: Ascending auction mode
-The system MUST support an ascending auction mode for each revealed property.
-
-#### Scenario: Open ascending bids
-- **WHEN** ascending auction mode is active for a revealed property
-- **THEN** the system SHALL allow players to openly raise bids by the configured bid increment
-
-#### Scenario: Pass until winner remains
-- **WHEN** every active bidder except one has passed
-- **THEN** the system SHALL assign the property to the remaining bidder at the current bid
-
-### Requirement: Silent auction mode
-The system MUST support a silent auction mode for each revealed property.
-
-#### Scenario: Submit silent bids
-- **WHEN** silent auction mode is active for a revealed property
-- **THEN** the system SHALL collect an opening bid and maximum bid from each participating player
-
-#### Scenario: Resolve silent winner price
-- **WHEN** one player has the highest maximum bid
-- **THEN** the system SHALL assign the property to that player at the greater of their opening bid or the amount needed to beat the next highest maximum bid by the configured bid increment, capped by their maximum bid
-
-#### Scenario: Silent auction max-bid tie
-- **WHEN** multiple players share the highest maximum bid
-- **THEN** the system SHALL run a sudden-death re-bid among the tied players for the same property
 
 ### Requirement: Mobile-first setup experience
 The system MUST present the setup and bidding experience in a layout that remains usable on supported phone screen sizes in both portrait and landscape orientations.
