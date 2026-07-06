@@ -79,7 +79,7 @@ export default function App() {
         const nextRemaining = Math.max(0, remaining - 1)
         setLocalCountdownRemaining(nextRemaining)
         if (nextRemaining > 0) {
-          playSound("tick")
+          playSound()
           tick(nextRemaining)
         }
       }, countdownTickDelay())
@@ -360,15 +360,15 @@ export function countdownTickDelay() {
   return 1000
 }
 
-function playSound(kind: "bid" | "win" | "tick") {
+function playSound() {
   try {
-    playTone(kind)
+    playTone()
   } catch {
     // Sound is best-effort; blocked or unsupported audio should never affect bidding.
   }
 }
 
-function playTone(kind: "bid" | "win" | "tick") {
+function playTone() {
   const audioWindow = window as typeof window & {
     webkitAudioContext?: typeof AudioContext
   }
@@ -381,16 +381,12 @@ function playTone(kind: "bid" | "win" | "tick") {
   const oscillator = audioContext.createOscillator()
   const gain = audioContext.createGain()
   const now = audioContext.currentTime
-  const duration = kind === "win" ? 0.18 : kind === "tick" ? 0.035 : 0.08
+  const duration = 0.035
 
   oscillator.type = "sine"
-  oscillator.frequency.value =
-    kind === "win" ? 660 : kind === "tick" ? 880 : 440
+  oscillator.frequency.value = 880
   gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.exponentialRampToValueAtTime(
-    kind === "tick" ? 0.025 : 0.06,
-    now + 0.01
-  )
+  gain.gain.exponentialRampToValueAtTime(0.025, now + 0.01)
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
   oscillator.connect(gain)
   gain.connect(audioContext.destination)
