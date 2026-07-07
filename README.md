@@ -98,10 +98,11 @@ As I improved at narrowing problem spaces, both on my own and with the help of O
 
 For new features or large modification, my flow typically looked like this:
 
-1.  ospx:explore to iteratively define and narrow down the problem space
-2.  ospx:apply
-3.  Sanity test the change manually
-4.  Iterate as needed
+1.  opsx:explore to iteratively define and narrow down the problem space
+2.  opsx:propose to formalize specs and implementation plan
+3.  opsx:apply
+4.  Sanity test the change manually
+5.  Iterate as needed
 
 ### UI Iteration
 
