@@ -129,6 +129,6 @@ Acceptance criteria:
 
 ### Other Learnings
 
-- With hindsight, I would've written the PROJECT_CONTEXT.md first before jumping into SDD. I believe it would've given the agents better guardrails around folder structure and tech stack (notably using Tailwind)
+- With hindsight, I would've written the AGENTS.md first before jumping into SDD. I believe it would've given the agents better guardrails around folder structure and tech stack (notably using Tailwind)
 
 [AI Learnings](./docs/AI%20Learnings.md) has additional high-level insights into what I've learned during this process.

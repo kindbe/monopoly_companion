@@ -13,7 +13,7 @@ This project is a companion experience for the Monopoly board game. It is meant 
 
 ```
 monopoly-companion/
-├──e2e/           # End-to-end tests
+├── e2e/           # End-to-end tests
 ├── openspec/     # OpenSpec specifications and changes
 └── src/
   ├── common/     # Shared utilities
