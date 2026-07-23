@@ -12,11 +12,11 @@ This project is a companion experience for the Monopoly board game. It is meant 
 # Project Layout
 
 e2e/ # End-to-end tests
-openspec/     # OpenSpec specifications and changes
+openspec/ # OpenSpec specifications and changes
 src/
-  common/     # Shared utilities
-  components/ # React components and component-specific supporting types/utilities
-  server/     # Multiplayer session coordination server code
+common/ # Shared utilities
+components/ # React components and component-specific supporting types/utilities
+server/ # Multiplayer session coordination server code
 
 # Coding Conventions
 
@@ -51,8 +51,8 @@ OpenSpec changes define intended behavior for work performed under that change. 
 
 # Development Commands
 
-- pnpm build          # Builds the app
-- pnpm dev:all        # Runs both the frontend and the multiplayer coordination server
-- pnpm test           # Runs unit tests
-- pnpm test:coverage  # Runs unit tests with code coverage enabled
-- pnpm test:e2e       # Runs PlayWright e2e tests
+- pnpm build # Builds the app
+- pnpm dev:all # Runs both the frontend and the multiplayer coordination server
+- pnpm test # Runs unit tests
+- pnpm test:coverage # Runs unit tests with code coverage enabled
+- pnpm test:e2e # Runs PlayWright e2e tests
