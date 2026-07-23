@@ -54,8 +54,8 @@ OpenSpec changes define intended behavior for work performed under that change. 
 
 # Development Commands
 
-- pnpm build # Builds the app
-- pnpm dev:all # Runs both the frontend and the multiplayer coordination server
-- pnpm test # Runs unit tests
-- pnpm test:coverage # Runs unit tests with code coverage enabled
-- pnpm test:e2e # Runs PlayWright e2e tests
+- pnpm build          # Builds the app
+- pnpm dev:all        # Runs both the frontend and the multiplayer coordination server
+- pnpm test           # Runs unit tests
+- pnpm test:coverage  # Runs unit tests with code coverage enabled
+- pnpm test:e2e       # Runs PlayWright e2e tests
