@@ -4,7 +4,8 @@ node_modules/
 openspec/
 superpowers/
 README.md
-PROJECT_CONTEXT.md
+AGENTS.md
+CLAUDE.md
 pnpm-lock.yaml
 vite.config.*
 playwright-report/

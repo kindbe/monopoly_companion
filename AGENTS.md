@@ -12,11 +12,11 @@ This project is a companion experience for the Monopoly board game. It is meant 
 # Project Layout
 
 e2e/ # End-to-end tests
-openspec/ # OpenSpec specifications and changes
-src/
-common/ # Shared utilities
-components/ # React components and component-specific supporting types/utilities
-server/ # Multiplayer session coordination server code
+  openspec/     # OpenSpec specifications and changes
+  src/
+    common/     # Shared utilities
+    components/ # React components and component-specific supporting types/utilities
+    server/     # Multiplayer session coordination server code
 
 # Coding Conventions
 
