@@ -16,6 +16,18 @@ Two requirements in the existing `visual-design-polish` capability directly cont
 
 A third requirement, **Workflow and automation stability**, already states that mobile layouts SHALL remain "free of incoherent overlap." The owned-property grid overflow described in the proposal violates this today. That fix is therefore a correction of existing behavior, not a new requirement.
 
+### Conflicts in `multiplayer-bidding`
+
+Three further requirements landed in the main spec when the pending archive queue was reconciled, and all three contradict this change. They are amended in the delta rather than left to be discovered mid-implementation.
+
+4. **Synchronized bidding countdown** pins the countdown "below the current property card." The phone layout moves it into the pinned header, because below the card puts it in the scrolling region and out of view. The scenario is rewritten to require what actually matters — the countdown is visible without scrolling for the whole round — with placement following the viewport rather than being fixed.
+
+5. **Player bidding visual presentation** caps the property name at 24pt. The deed card makes the property name its dominant element, which exceeds that at tablet size. The cap existed to stop an overlong title from blowing out the old card; the replacement scenario states the intent directly — the name is the largest text and scales with card width, wrapping rather than truncating.
+
+6. **Private player state** requires owned-property cards to carry "only each property name and color header." This change requires the group name to be rendered as text everywhere the group appears, including these cards, so "only" would forbid the accessibility redundancy that `Non-color property group identification` mandates. The scenario is widened to admit the group name and nothing else, so the privacy intent — no cash, no bid history, no other-player data — is preserved.
+
+The related `Remove color group stat` scenario is kept but clarified: what it forbids is a `Color Group` row among the price and rent stats, not the group name on the band.
+
 ## Decisions
 
 ### Identity

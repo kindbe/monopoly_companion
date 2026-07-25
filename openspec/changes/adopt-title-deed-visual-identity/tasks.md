@@ -50,6 +50,8 @@
 ### 8. Verification
 
 - [ ] Add Playwright coverage asserting quick-bid and pass controls are within the viewport without scrolling at 375x667 during a live round.
+- [ ] Add Playwright coverage asserting the countdown is visible without scrolling at 375x667 for the whole round, since this change frees it from its fixed position below the property card.
+- [ ] Confirm the three amended `multiplayer-bidding` requirements match what was built: countdown always visible, property name the card's dominant scaling text, and owned-property cards carrying the group name as text and no other property detail.
 - [ ] Add Playwright coverage asserting no horizontal overflow at 375px on every screen, including with owned properties.
 - [ ] Add Playwright coverage for the three-way contrast control.
 - [ ] Confirm the five existing `data-testid` hooks and all accessible labels still resolve.

@@ -24,11 +24,12 @@ All players are on phones and tablets, and after setup the host bids exactly lik
 ### Modified Capabilities
 
 - `visual-design-polish`: Replaces the violet/emerald palette requirement with the title-deed identity, permits the intentional hard-offset shadow treatment, extends contrast verification to three modes and property band pairings, adds non-color group identification, and adds device-appropriate bidding layout requirements.
+- `multiplayer-bidding`: Frees the countdown from a fixed position below the property card, replaces the 24pt property-name cap with a scaling dominant title, and admits the group name as text on owned-property cards.
 - `ui-automation`: Browser automation should cover the pinned bid controls, the absence of horizontal overflow at small viewports, and the three-way contrast control.
 
 ## Impact
 
 - Affected code: `src/styles.css`, `src/common/uiClasses.ts`, `src/common/auctionTypes.ts`, all six screen components, `src/App.tsx` theme state and persistence, `src/styles.test.ts`, and Playwright tests.
 - One new runtime dependency: a self-hosted geometric display webfont. AGENTS.md requires clear value for new dependencies; the rationale and the self-hosting decision are recorded in `design.md`.
-- Two existing requirements in `visual-design-polish` are directly contradicted by this change and are amended rather than silently overridden. See "Spec conflicts" in `design.md`.
+- Five existing requirements are directly contradicted by this change and are amended rather than silently overridden: two in `visual-design-polish` and three in `multiplayer-bidding`. See "Spec conflicts" in `design.md`.
 - The five existing `data-testid` hooks and all accessible labels are preserved, so the current Playwright suite should continue to pass unmodified except where it asserts on layout that intentionally changes.
