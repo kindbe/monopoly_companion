@@ -40,6 +40,7 @@ test("host and two players complete a multiplayer bidding session", async ({
   await expect(
     host.getByRole("heading", { name: /host lobby/i })
   ).not.toBeVisible()
+  await expect(host.getByTestId("join-code")).toHaveCount(0)
   await expect(host.getByText(/your cash: \$1500 \/ \$1500/i)).toBeVisible()
   await expect(
     playerOne.getByRole("heading", { name: /player bidding/i })
@@ -105,6 +106,25 @@ test("host and two players complete a multiplayer bidding session", async ({
   await expect(
     playerTwo.getByText(/your cash: \$1500 \/ \$1500/i)
   ).toBeVisible()
+
+  // Gate on completion before asserting completion behavior. Without this the
+  // assertions below run mid-round, where they pass for the wrong reasons: the
+  // bid buttons are still disabled by the exhausted per-round bid count rather
+  // than by the completed session.
+  await expect(host.getByText(/remaining properties: 0/i)).toBeVisible()
+
+  await expect(
+    host.getByRole("heading", { name: /host lobby/i })
+  ).not.toBeVisible()
+  await expect(host.getByTestId("join-code")).toHaveCount(0)
+  await expect(
+    host.getByRole("heading", { name: /your properties/i })
+  ).toBeVisible()
+  await expect(host.getByText(/no properties won/i)).toBeVisible()
+  // Load-bearing only after the completion gate above: revealNextRound resets
+  // the per-round bid count at completion, so these re-enable without the fix.
+  await expect(host.getByRole("button", { name: /^\+\$10$/i })).toBeDisabled()
+  await expect(host.getByRole("button", { name: /^skip$/i })).toBeDisabled()
 })
 
 test("theme toggle switches between preferred dark mode and light mode", async ({

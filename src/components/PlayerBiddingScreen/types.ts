@@ -1,7 +1,9 @@
 import type { Property } from "@/domain/bidding"
+import type { SessionPhase } from "@/shared/multiplayer"
 
 export type PlayerBiddingScreenProps = {
   playerName: string
+  sessionPhase: SessionPhase
   currentProperty: Property | null
   currentBid: number
   currentBidderName: string | null

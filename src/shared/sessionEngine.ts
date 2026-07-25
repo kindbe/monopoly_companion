@@ -240,9 +240,18 @@ export function createSessionEngine(options: StoreOptions = {}) {
     }
   }
 
-  function markDisconnected(joinCode: string, playerId: string) {
+  function markDisconnected(
+    joinCode: string,
+    playerId: string,
+    now = Date.now()
+  ) {
     const session = getSession(joinCode)
     session.connectedPlayerIds.delete(playerId)
+    // Losing a player can complete the all-skipped condition on its own, so the
+    // round has to be re-tested here as well as on skip.
+    if (session.phase === "bidding" && allPlayersSkipped(session)) {
+      resolveCurrentRound(session, now, "Skipped!")
+    }
     notify(joinCode)
   }
 
@@ -460,9 +469,9 @@ function countdownRemaining(session: MultiplayerSession, now = Date.now()) {
 function allPlayersSkipped(session: MultiplayerSession) {
   return (
     session.roundActions.size === 0 &&
-    session.players.length > 0 &&
-    session.players.every((player) =>
-      session.roundSkippedPlayerIds.has(player.id)
+    session.connectedPlayerIds.size > 0 &&
+    [...session.connectedPlayerIds].every((playerId) =>
+      session.roundSkippedPlayerIds.has(playerId)
     )
   )
 }

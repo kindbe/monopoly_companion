@@ -13,12 +13,6 @@ import type { HostLobbyScreenProps } from "@/components/HostLobbyScreen/types"
 export function HostLobbyScreen({
   joinCode,
   players,
-  phase,
-  currentProperty,
-  currentBid,
-  currentBidderName,
-  countdownRemaining,
-  completedBidCount,
   message,
   startBidding,
   restart
@@ -51,21 +45,6 @@ export function HostLobbyScreen({
         ) : (
           <p className={finePrintClass}>Waiting for players to join.</p>
         )}
-        {phase === "bidding" ? (
-          <div className={finePrintClass}>
-            <p>
-              {currentProperty ?? "Current property"} with {countdownRemaining}s
-              remaining.
-            </p>
-            <p>
-              Current bid: ${currentBid}
-              {currentBidderName ? ` by ${currentBidderName}` : ""}
-            </p>
-          </div>
-        ) : null}
-        {phase === "complete" ? (
-          <p className={finePrintClass}>Completed bids: {completedBidCount}</p>
-        ) : null}
       </section>
       <section className={startBandClass}>
         {message ? <p role="alert">{message}</p> : null}

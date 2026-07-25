@@ -266,6 +266,142 @@ describe("App", () => {
     ).not.toBeInTheDocument()
   })
 
+  it("moves the host out of the lobby and into the bidding view on player state", async () => {
+    const sockets: FakeSocket[] = []
+    vi.stubGlobal(
+      "WebSocket",
+      class extends FakeSocket {
+        static OPEN = 1
+
+        constructor(url: string) {
+          super(url)
+          sockets.push(this)
+        }
+      }
+    )
+    const propertyById = new Map(
+      MONOPOLY_PROPERTIES.map((property) => [property.id, property])
+    )
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole("button", { name: /host multiplayer/i }))
+    await user.type(screen.getByLabelText(/host name/i), "Host")
+    await user.click(screen.getByRole("button", { name: /create session/i }))
+    act(() => {
+      sockets[0].emit("open")
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "joined",
+          joinCode: "TABLE1",
+          playerId: "player-1"
+        })
+      })
+    })
+
+    expect(
+      screen.getByRole("heading", { name: /host lobby/i })
+    ).toBeInTheDocument()
+
+    act(() => {
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "player-state",
+          state: {
+            role: "player",
+            joinCode: "TABLE1",
+            phase: "bidding",
+            player: {
+              id: "player-1",
+              name: "Host",
+              remainingCash: 1500,
+              properties: []
+            },
+            currentProperty: propertyById.get("boardwalk")!,
+            currentBid: 0,
+            currentBidderName: null,
+            openingBid: 0,
+            remainingPropertyCount: 3,
+            countdownRemaining: 10,
+            remainingBidCount: 3,
+            hasSkipped: false,
+            roundMessage: null
+          }
+        })
+      })
+    })
+
+    expect(
+      screen.queryByRole("heading", { name: /host lobby/i })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId("join-code")).not.toBeInTheDocument()
+    expect(screen.getByText(/your cash: \$1500 \/ \$1500/i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^\+\$10$/i })).toBeEnabled()
+    expect(screen.getByRole("button", { name: /^skip$/i })).toBeEnabled()
+  })
+
+  it("disables the bid and skip controls once the session is complete", async () => {
+    const sockets: FakeSocket[] = []
+    vi.stubGlobal(
+      "WebSocket",
+      class extends FakeSocket {
+        static OPEN = 1
+
+        constructor(url: string) {
+          super(url)
+          sockets.push(this)
+        }
+      }
+    )
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole("button", { name: /join session/i }))
+    await user.type(screen.getByLabelText(/join code/i), "TABLE1")
+    await user.type(screen.getByLabelText(/player name/i), "Joelle")
+    await user.click(screen.getByRole("button", { name: /^join$/i }))
+    act(() => {
+      sockets[0].emit("open")
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "joined",
+          joinCode: "TABLE1",
+          playerId: "player-1"
+        })
+      })
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "player-state",
+          state: {
+            role: "player",
+            joinCode: "TABLE1",
+            phase: "complete",
+            player: {
+              id: "player-1",
+              name: "Joelle",
+              remainingCash: 920,
+              properties: []
+            },
+            currentProperty: null,
+            currentBid: 0,
+            currentBidderName: null,
+            openingBid: 0,
+            remainingPropertyCount: 0,
+            countdownRemaining: 0,
+            remainingBidCount: 3,
+            hasSkipped: false,
+            roundMessage: null
+          }
+        })
+      })
+    })
+
+    for (const button of screen.getAllByRole("button", { name: /^\+\$/i })) {
+      expect(button).toBeDisabled()
+    }
+    expect(screen.getByRole("button", { name: /^skip$/i })).toBeDisabled()
+  })
+
   it("requires a join code and name for player join", async () => {
     const user = userEvent.setup()
     render(<App />)

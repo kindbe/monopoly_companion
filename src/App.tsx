@@ -289,12 +289,6 @@ export default function App() {
           <HostLobbyScreen
             joinCode={hostState?.joinCode ?? joinCode}
             players={hostState?.players ?? []}
-            phase={hostState?.phase ?? "lobby"}
-            currentProperty={hostState?.currentProperty?.name ?? null}
-            currentBid={hostState?.currentBid ?? 0}
-            currentBidderName={hostState?.currentBidderName ?? null}
-            countdownRemaining={hostState?.countdownRemaining ?? 0}
-            completedBidCount={hostState?.completedBids.length ?? 0}
             message={multiplayerMessage}
             startBidding={startMultiplayerBidding}
             restart={restart}
@@ -316,6 +310,7 @@ export default function App() {
         {phase === "playerBidding" ? (
           <PlayerBiddingScreen
             playerName={playerState?.player.name ?? joinedPlayerName}
+            sessionPhase={playerState?.phase ?? "bidding"}
             currentProperty={playerState?.currentProperty ?? null}
             currentBid={playerState?.currentBid ?? 0}
             currentBidderName={playerState?.currentBidderName ?? null}

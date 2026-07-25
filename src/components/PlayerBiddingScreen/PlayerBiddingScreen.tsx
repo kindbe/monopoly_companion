@@ -15,6 +15,7 @@ import { QUICK_BID_INCREMENTS, STARTING_CASH } from "@/domain/bidding"
 import type { PlayerBiddingScreenProps } from "@/components/PlayerBiddingScreen/types"
 
 export function PlayerBiddingScreen({
+  sessionPhase,
   currentProperty,
   currentBid,
   currentBidderName,
@@ -29,6 +30,7 @@ export function PlayerBiddingScreen({
   bid,
   skip
 }: PlayerBiddingScreenProps) {
+  const biddingActive = sessionPhase === "bidding"
   const countdownClass = cx(
     countdownClassBase,
     countdownRemaining <= 5 &&
@@ -71,7 +73,9 @@ export function PlayerBiddingScreen({
               <button
                 type="button"
                 className={compactPrimaryActionClass}
-                disabled={hasSkipped || remainingBidCount <= 0}
+                disabled={
+                  !biddingActive || hasSkipped || remainingBidCount <= 0
+                }
                 key={bidIncrement}
                 onClick={() => bid(bidIncrement)}
               >
@@ -83,7 +87,7 @@ export function PlayerBiddingScreen({
         <button
           type="button"
           className={`${compactSecondaryActionClass} w-full`}
-          disabled={hasSkipped}
+          disabled={!biddingActive || hasSkipped}
           onClick={skip}
         >
           {hasSkipped ? "Skipped this round" : "Skip"}
