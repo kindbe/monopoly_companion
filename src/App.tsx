@@ -1,11 +1,21 @@
-import { Moon, Sun } from "lucide-react"
+import { Contrast, Moon, Sun } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { buildEligiblePropertyPool, type Property } from "@/domain/bidding"
-import type { Phase, Theme } from "@/common/auctionTypes"
+import type { ContrastMode, Phase } from "@/common/auctionTypes"
+import {
+  CONTRAST_MODE_STORAGE_KEY,
+  contrastModeLabel,
+  nextContrastMode,
+  persistContrastMode,
+  resolveInitialContrastMode
+} from "@/common/contrastMode"
+import { cx } from "@/common/classNames"
 import {
   activeScreenClass,
   appShellClass,
+  fullBleedScreenClass,
   mastheadClass,
+  scrollingScreenClass,
   themeToggleClass
 } from "@/common/uiClasses"
 import { HostLobbyScreen } from "@/components/HostLobbyScreen/HostLobbyScreen"
@@ -43,7 +53,9 @@ export default function App() {
   const [hostState, setHostState] = useState<HostState | null>(null)
   const [playerState, setPlayerState] = useState<PlayerState | null>(null)
   const [localCountdownRemaining, setLocalCountdownRemaining] = useState(30)
-  const [theme, setTheme] = useState<Theme>(() => initialTheme())
+  const [contrastMode, setContrastMode] = useState<ContrastMode>(() =>
+    resolveInitialContrastMode()
+  )
   const playerIdRef = useRef<string | null>(null)
   const countdownRoundKeyRef = useRef<string | null>(null)
   const transportRef = useRef<MultiplayerTransport | null>(null)
@@ -55,9 +67,9 @@ export default function App() {
   const cappedPropertyCount = Math.min(propertyCount, eligiblePool.length)
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    localStorage.setItem("theme", theme)
-  }, [theme])
+    document.documentElement.dataset.contrast = contrastMode
+    persistContrastMode(CONTRAST_MODE_STORAGE_KEY, contrastMode)
+  }, [contrastMode])
 
   useEffect(() => {
     if (phase !== "playerBidding" || !playerState) {
@@ -238,22 +250,29 @@ export default function App() {
         <button
           type="button"
           className={themeToggleClass}
-          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          onClick={() =>
-            setTheme((current) => (current === "dark" ? "light" : "dark"))
-          }
+          aria-label={`Contrast: ${contrastModeLabel(contrastMode)}. Switch to ${contrastModeLabel(nextContrastMode(contrastMode))} mode`}
+          title={`Contrast: ${contrastModeLabel(contrastMode)}. Switch to ${contrastModeLabel(nextContrastMode(contrastMode))} mode`}
+          onClick={() => setContrastMode(nextContrastMode)}
         >
-          {theme === "dark" ? (
+          {contrastMode === "standard" ? (
             <Sun aria-hidden="true" size={14} />
-          ) : (
+          ) : null}
+          {contrastMode === "high-contrast" ? (
+            <Contrast aria-hidden="true" size={14} />
+          ) : null}
+          {contrastMode === "dark" ? (
             <Moon aria-hidden="true" size={14} />
-          )}
+          ) : null}
         </button>
       </section>
 
       <div
-        className={activeScreenClass}
+        className={cx(
+          activeScreenClass,
+          phase === "playerBidding"
+            ? fullBleedScreenClass
+            : scrollingScreenClass
+        )}
         data-testid="active-screen"
         key={phase}
       >
@@ -387,14 +406,4 @@ function playTone() {
   gain.connect(audioContext.destination)
   oscillator.start(now)
   oscillator.stop(now + duration)
-}
-
-function initialTheme(): Theme {
-  const savedTheme = localStorage.getItem("theme")
-  if (savedTheme === "light" || savedTheme === "dark") {
-    return savedTheme
-  }
-  return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches
-    ? "dark"
-    : "light"
 }

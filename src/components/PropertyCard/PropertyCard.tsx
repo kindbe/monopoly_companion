@@ -1,56 +1,88 @@
-import type React from "react"
 import {
   propertyBandClass,
+  propertyBandLabelClass,
   propertyBodyClass,
   propertyCardClass,
-  propertyTitleClass
+  propertyCardLargeClass,
+  propertyFootClass,
+  propertyKickerClass,
+  propertyPriceRowClass,
+  propertyRentKeyClass,
+  propertyRentLeaderClass,
+  propertyRentListClass,
+  propertyRentRowClass,
+  propertyRentValueClass,
+  propertyRuleClass,
+  propertyTitleClass,
+  propertyTitleLargeClass
 } from "@/common/uiClasses"
-import { propertyAccent, propertyBandText } from "@/common/propertyDisplay"
+import { propertyGroupLabel, propertyGroupSlug } from "@/common/propertyDisplay"
 import type { PropertyCardProps } from "@/components/PropertyCard/types"
 
-export function PropertyCard({ property }: PropertyCardProps) {
+const RENT_LABELS = [
+  "Rent",
+  "With 1 House",
+  "With 2 Houses",
+  "With 3 Houses",
+  "With 4 Houses",
+  "With Hotel"
+]
+
+export function PropertyCard({
+  property,
+  size = "regular"
+}: PropertyCardProps) {
+  const groupLabel = propertyGroupLabel(property)
   return (
     <article
-      className={propertyCardClass}
-      style={
-        {
-          "--property-color": propertyAccent(property),
-          "--property-band-text": propertyBandText(property)
-        } as React.CSSProperties
-      }
+      className={size === "large" ? propertyCardLargeClass : propertyCardClass}
+      data-group={propertyGroupSlug(property)}
+      aria-label={`Title deed, ${property.name}, ${groupLabel} group`}
     >
       <div className={propertyBandClass}>
-        <span>{property.category === "street" ? "" : property.category}</span>
+        <span className={propertyBandLabelClass}>{groupLabel}</span>
       </div>
       <div className={propertyBodyClass}>
-        <p className="m-0 font-black uppercase tracking-[0.08em]">Title Deed</p>
-        <h2 className={propertyTitleClass}>{property.name}</h2>
-        <div className="grid grid-cols-2 gap-1.5 font-black">
+        <p className={propertyKickerClass}>Title Deed</p>
+        <h2
+          className={
+            size === "large" ? propertyTitleLargeClass : propertyTitleClass
+          }
+        >
+          {property.name}
+        </h2>
+        <div className={propertyPriceRowClass}>
           <span>Price: ${property.retailValue}</span>
           <span>Mortgage: ${property.mortgage}</span>
         </div>
+        <hr className={propertyRuleClass} />
         {property.category === "street" ? (
           <>
-            <div
-              className="grid grid-cols-2 gap-1.5 text-left"
+            <ul
+              className={propertyRentListClass}
               aria-label={`${property.name} rent schedule`}
             >
-              <span>Rent ${property.rent[0]}</span>
-              <span>1 house ${property.rent[1]}</span>
-              <span>2 houses ${property.rent[2]}</span>
-              <span>3 houses ${property.rent[3]}</span>
-              <span>4 houses ${property.rent[4]}</span>
-              <span>Hotel ${property.rent[5]}</span>
-            </div>
-            <p className="mt-2.5 font-normal text-slate-600">
+              {RENT_LABELS.map((label, index) => (
+                <li className={propertyRentRowClass} key={label}>
+                  <span className={propertyRentKeyClass}>{label}</span>
+                  <span
+                    className={propertyRentLeaderClass}
+                    aria-hidden="true"
+                  />
+                  <span className={propertyRentValueClass}>
+                    ${property.rent[index]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <hr className={propertyRuleClass} />
+            <p className={propertyFootClass}>
               Houses ${property.houseCost} each. Hotel ${property.hotelCost}{" "}
               plus 4 houses.
             </p>
           </>
         ) : (
-          <p className="border-t border-slate-900/25 pt-1.5 font-semibold">
-            {property.rentDescription}
-          </p>
+          <p className={propertyFootClass}>{property.rentDescription}</p>
         )}
       </div>
     </article>

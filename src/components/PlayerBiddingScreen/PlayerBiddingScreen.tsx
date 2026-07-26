@@ -1,13 +1,26 @@
 import { cx } from "@/common/classNames"
 import {
+  biddingCollectionClass,
+  biddingDeedRegionClass,
+  biddingDockClass,
+  biddingHeaderClass,
   biddingLayoutClass,
-  compactPrimaryActionClass,
-  compactSecondaryActionClass,
+  biddingScrollClass,
   countdownClassBase,
-  currentBidClass,
+  countdownUnitClass,
+  dockStatClass,
+  dockStatLeadClass,
+  dockStatsClass,
   finePrintClass,
-  panelClass,
-  propertyStageClass
+  liveStateClass,
+  lotCounterClass,
+  passButtonClass,
+  quickBidAmountClass,
+  quickBidButtonClass,
+  quickBidCaptionClass,
+  quickBidGridClass,
+  sectionHeadClass,
+  skippedOverlayClass
 } from "@/common/uiClasses"
 import { PropertyCard } from "@/components/PropertyCard/PropertyCard"
 import { MiniPropertyCards } from "@/components/MiniPropertyCards/MiniPropertyCards"
@@ -31,77 +44,105 @@ export function PlayerBiddingScreen({
   skip
 }: PlayerBiddingScreenProps) {
   const biddingActive = sessionPhase === "bidding"
+  const bidsDisabled = !biddingActive || hasSkipped || remainingBidCount <= 0
   const countdownClass = cx(
     countdownClassBase,
-    countdownRemaining <= 5 &&
-      countdownRemaining > 0 &&
-      "animate-[urgent-pulse_900ms_ease-in-out_infinite] border-rose-200 text-rose-600 dark:border-rose-300/35 dark:text-rose-300"
+    countdownRemaining <= 5 && countdownRemaining > 0 && "animate-pulse"
   )
   return (
     <div className={biddingLayoutClass}>
-      <section className={propertyStageClass}>
-        <div className="relative mx-auto w-full max-w-105">
-          {currentProperty ? <PropertyCard property={currentProperty} /> : null}
-          {roundMessage === "Skipped!" ? (
-            <div
-              className="absolute inset-0 z-1 grid animate-[overlay-in_220ms_ease-out] rotate-[-7deg] place-items-center rounded-xl bg-violet-950/75 text-[clamp(2.4rem,9vw,5.4rem)] font-bold uppercase tracking-[0.06em] text-white backdrop-blur-[2px] [text-shadow:0_4px_0_rgba(0,0,0,0.45)]"
-              data-testid="skipped-overlay"
-            >
-              Skipped!
-            </div>
-          ) : null}
-        </div>
-        <p className={countdownClass}>{countdownRemaining}s</p>
-        <p>Remaining properties: {remainingPropertyCount}</p>
-      </section>
-      <section className={`${panelClass} grid content-start gap-3`}>
-        {roundMessage ? <p role="status">{roundMessage}</p> : null}
-        <p className={currentBidClass}>
-          Current bid: ${currentBid}
-          {currentBidderName ? ` by ${currentBidderName}` : ""}
+      {/* Pinned on phones; dissolves into the grid on the rail layout. */}
+      <div className={biddingHeaderClass}>
+        <p className={lotCounterClass}>
+          Remaining properties: {remainingPropertyCount}
         </p>
-        <p className={finePrintClass}>Bids remaining: {remainingBidCount}</p>
-        <div className="grid items-stretch gap-2.5 md:grid-cols-[minmax(150px,1fr)_minmax(170px,1.15fr)]">
-          <p className="mt-2.5 grid min-h-24 place-items-center rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-center font-semibold text-emerald-800 shadow-sm shadow-emerald-950/10 transition duration-200 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200 dark:shadow-black/20">
-            Your cash: ${remainingCash} / ${STARTING_CASH}
-          </p>
-          <div
-            className="grid grid-cols-2 gap-2 [&>button]:min-w-0"
-            data-testid="player-quick-bids"
-          >
-            {QUICK_BID_INCREMENTS.map((bidIncrement) => (
-              <button
-                type="button"
-                className={compactPrimaryActionClass}
-                disabled={
-                  !biddingActive || hasSkipped || remainingBidCount <= 0
-                }
-                key={bidIncrement}
-                onClick={() => bid(bidIncrement)}
+        <div className={liveStateClass}>
+          <span className={countdownClass}>{countdownRemaining}s</span>
+          <span className={countdownUnitClass}>left</span>
+        </div>
+      </div>
+
+      {/* Phone: the one scrolling region. Tablet: two separate rail zones. */}
+      <div className={biddingScrollClass}>
+        <div className={biddingDeedRegionClass}>
+          <div className="relative mx-auto w-full max-w-105 sm:max-w-125 lg:max-w-140">
+            {currentProperty ? (
+              <PropertyCard property={currentProperty} size="large" />
+            ) : null}
+            {roundMessage === "Skipped!" ? (
+              <div
+                className={skippedOverlayClass}
+                data-testid="skipped-overlay"
               >
-                +${bidIncrement}
-              </button>
-            ))}
+                Skipped!
+              </div>
+            ) : null}
           </div>
+        </div>
+
+        {/* Reachable while bidding on every device: holdings are the bid. */}
+        <section className={biddingCollectionClass}>
+          <h3 className={sectionHeadClass}>
+            Your properties · {wonProperties.length}
+          </h3>
+          {wonProperties.length ? (
+            <MiniPropertyCards
+              properties={wonProperties}
+              inspectProperty={inspectProperty}
+            />
+          ) : (
+            <p className={finePrintClass}>No properties won</p>
+          )}
+        </section>
+      </div>
+
+      {/* Phone: pinned thumb dock. Tablet: the middle rail zone. */}
+      <div className={biddingDockClass}>
+        {roundMessage ? (
+          <p className={dockStatLeadClass} role="status">
+            {roundMessage}
+          </p>
+        ) : null}
+        <div className={dockStatsClass}>
+          <span className={dockStatLeadClass}>
+            Current bid: ${currentBid}
+            {currentBidderName ? ` by ${currentBidderName}` : ""}
+          </span>
+          <span className={dockStatClass}>
+            Your cash: ${remainingCash} / ${STARTING_CASH}
+          </span>
+          <span className={dockStatClass}>
+            Bids remaining: {remainingBidCount}
+          </span>
+        </div>
+        <div className={quickBidGridClass} data-testid="player-quick-bids">
+          {QUICK_BID_INCREMENTS.map((bidIncrement) => (
+            <button
+              type="button"
+              className={quickBidButtonClass}
+              disabled={bidsDisabled}
+              key={bidIncrement}
+              onClick={() => bid(bidIncrement)}
+            >
+              <span className={quickBidAmountClass}>+${bidIncrement}</span>
+              {/* Aria-hidden: the resulting total removes mental arithmetic
+                  under time pressure without lengthening the button's
+                  accessible name away from the increment it applies. */}
+              <span className={quickBidCaptionClass} aria-hidden="true">
+                Bid ${currentBid + bidIncrement}
+              </span>
+            </button>
+          ))}
         </div>
         <button
           type="button"
-          className={`${compactSecondaryActionClass} w-full`}
+          className={passButtonClass}
           disabled={!biddingActive || hasSkipped}
           onClick={skip}
         >
           {hasSkipped ? "Skipped this round" : "Skip"}
         </button>
-        <h3>Your properties</h3>
-        {wonProperties.length ? (
-          <MiniPropertyCards
-            properties={wonProperties}
-            inspectProperty={inspectProperty}
-          />
-        ) : (
-          <p className={finePrintClass}>No properties won</p>
-        )}
-      </section>
+      </div>
     </div>
   )
 }

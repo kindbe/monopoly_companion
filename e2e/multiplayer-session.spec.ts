@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Locator } from "@playwright/test"
 
 test("host and two players complete a multiplayer bidding session", async ({
   browser
@@ -127,16 +127,238 @@ test("host and two players complete a multiplayer bidding session", async ({
   await expect(host.getByRole("button", { name: /^skip$/i })).toBeDisabled()
 })
 
-test("theme toggle switches between preferred dark mode and light mode", async ({
+test("a phone-sized session keeps controls and layout inside a 375x667 viewport", async ({
+  browser
+}) => {
+  // A 5s bidding round plus a skipped round run inside this test.
+  test.setTimeout(90_000)
+  const host = await browser.newPage({ viewport: { width: 375, height: 667 } })
+  const player = await browser.newPage({
+    viewport: { width: 375, height: 667 }
+  })
+
+  await host.goto("/")
+  await expect(host.getByTestId("active-screen")).toBeVisible()
+  expect(
+    await host.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    ),
+    "landing screen horizontal overflow"
+  ).toBeLessThanOrEqual(0)
+
+  await host.getByRole("button", { name: /host multiplayer/i }).click()
+  await host.getByLabel(/host name/i).fill("Host")
+  await host.getByLabel(/property count/i).fill("4")
+  await host.getByLabel(/max bids per property/i).fill("1")
+  expect(
+    await host.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    ),
+    "host setup screen horizontal overflow"
+  ).toBeLessThanOrEqual(0)
+  await host.getByRole("button", { name: /create session/i }).click()
+
+  await expect(host.getByRole("heading", { name: /host lobby/i })).toBeVisible()
+  const joinCode = (await host.getByTestId("join-code").textContent())?.trim()
+  expect(joinCode).toBeTruthy()
+  expect(
+    await host.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    ),
+    "host lobby screen horizontal overflow"
+  ).toBeLessThanOrEqual(0)
+
+  await player.goto("/")
+  await player.getByRole("button", { name: /join session/i }).click()
+  await player.getByLabel(/join code/i).fill(joinCode!)
+  await player.getByLabel(/player name/i).fill("Joelle")
+  expect(
+    await player.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    ),
+    "player join screen horizontal overflow"
+  ).toBeLessThanOrEqual(0)
+  await player.getByRole("button", { name: /^join$/i }).click()
+
+  await expect(host.getByText(/Joelle connected/i)).toBeVisible()
+  await host.getByRole("button", { name: /start multiplayer bidding/i }).click()
+
+  // --- Round one: no owned properties yet. ---
+  await expect(player.getByText(/remaining properties: 4/i)).toBeVisible()
+  const deed = player.getByRole("article", { name: /^Title deed, / })
+  await expect(deed).toBeVisible()
+  const firstDeedLabel = await deed.getAttribute("aria-label")
+  const firstDeed = firstDeedLabel?.match(/^Title deed, (.+), (.+) group$/)
+  if (!firstDeed) {
+    throw new Error(`Unreadable deed label ${firstDeedLabel ?? "(missing)"}`)
+  }
+  const [, firstPropertyName, firstGroupLabel] = firstDeed
+
+  expect(
+    await player.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    ),
+    "bidding screen horizontal overflow, no owned properties"
+  ).toBeLessThanOrEqual(0)
+
+  const countdown = player.getByText(/^\d+s$/)
+  await expectWithinViewport(countdown, "countdown")
+
+  const quickBids = player.getByTestId("player-quick-bids")
+  await expectWithinViewport(quickBids, "quick bids")
+
+  const pass = player.getByRole("button", { name: /^skip$/i })
+  await expectWithinViewport(pass, "pass")
+
+  await player.getByRole("button", { name: /^\+\$10$/i }).click()
+
+  // The deed region scrolls; the countdown and the dock do not move with it.
+  await player.mouse.move(187, 380)
+  await player.mouse.wheel(0, 800)
+  await expectWithinViewport(countdown, "countdown after scrolling")
+  await expectWithinViewport(quickBids, "quick bids after scrolling")
+  await expectWithinViewport(pass, "pass after scrolling")
+
+  // Late in the same round the countdown is still in view without scrolling:
+  // it is visible for the whole round, not only when the property reveals.
+  await expect(player.getByText(/^[12]s$/)).toBeVisible()
+  await expectWithinViewport(countdown, "countdown late in round")
+
+  // --- Round two onwards: exactly one owned property, which is where the old
+  // fixed four-track grid forced 69px of page-wide overflow. Nobody bids
+  // again, so the holding stays at one however the later rounds resolve. ---
+  await expect(player.getByText(/your properties · 1/i)).toBeVisible()
+
+  // Skipped first, and immediately, so the two clicks land inside the same
+  // round: every participant skipping resolves it and raises the overlay over
+  // the next property.
+  await host.getByRole("button", { name: /^skip$/i }).click()
+  await player.getByRole("button", { name: /^skip$/i }).click()
+  await expect(player.getByTestId("skipped-overlay")).toBeVisible()
+
+  const ownedCard = player.getByTestId("mini-property-card")
+  await expect(ownedCard).toHaveCount(1)
+  await expect(ownedCard).toHaveAttribute(
+    "aria-label",
+    `View ${firstPropertyName}`
+  )
+  await expect(
+    player.getByRole("heading", {
+      name: new RegExp(`${firstGroupLabel} color group`, "i")
+    })
+  ).toBeVisible()
+  // The group name as text, the property name, and no other property detail.
+  expect(
+    (await ownedCard.innerText()).replace(/\s+/g, " ").trim().toLowerCase()
+  ).toBe(`${firstGroupLabel} ${firstPropertyName}`.toLowerCase())
+
+  expect(
+    await player.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    ),
+    "bidding screen horizontal overflow, one owned property"
+  ).toBeLessThanOrEqual(0)
+
+  await expectWithinViewport(countdown, "countdown with an owned property")
+  await expectWithinViewport(quickBids, "quick bids with an owned property")
+  await expectWithinViewport(pass, "pass with an owned property")
+
+  // --- The deed title is the card's dominant text: largest on the card, it
+  // wraps rather than truncating, and it grows with the available width. ---
+  const titleFontSize = await deed
+    .locator("h2")
+    .evaluate((title) => Number.parseFloat(getComputedStyle(title).fontSize))
+  const largestOtherFontSize = await deed.evaluate((card) =>
+    Math.max(
+      ...[...card.querySelectorAll("*")]
+        .filter(
+          (element) =>
+            element.tagName !== "H2" && (element.textContent ?? "").trim()
+        )
+        .map((element) => Number.parseFloat(getComputedStyle(element).fontSize))
+    )
+  )
+  expect(titleFontSize).toBeGreaterThan(largestOtherFontSize)
+  const titleFlow = await deed.locator("h2").evaluate((title) => ({
+    textOverflow: getComputedStyle(title).textOverflow,
+    whiteSpace: getComputedStyle(title).whiteSpace,
+    scrollWidth: title.scrollWidth,
+    clientWidth: title.clientWidth
+  }))
+  expect(titleFlow.textOverflow, "property name truncation").toBe("clip")
+  expect(titleFlow.whiteSpace, "property name wrapping").toBe("normal")
+  expect(titleFlow.scrollWidth).toBeLessThanOrEqual(titleFlow.clientWidth + 1)
+
+  await player.setViewportSize({ width: 1280, height: 800 })
+  const wideTitleFontSize = await deed
+    .locator("h2")
+    .evaluate((title) => Number.parseFloat(getComputedStyle(title).fontSize))
+  expect(wideTitleFontSize).toBeGreaterThan(titleFontSize)
+})
+
+test("contrast control cycles standard, high contrast and dark modes", async ({
   page
 }) => {
   await page.emulateMedia({ colorScheme: "dark" })
   await page.goto("/")
 
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark")
-  await page.getByRole("button", { name: /switch to light mode/i }).click()
+  await expect(page.locator("html")).toHaveAttribute("data-contrast", "dark")
+  await expect(
+    page.getByRole("button", {
+      name: /contrast: dark\. switch to standard mode/i
+    })
+  ).toBeVisible()
+  const darkGround = await page.evaluate(
+    () => getComputedStyle(document.documentElement).backgroundColor
+  )
 
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light")
+  await page.getByRole("button", { name: /switch to standard mode/i }).click()
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-contrast",
+    "standard"
+  )
+  await expect(
+    page.getByRole("button", {
+      name: /contrast: standard\. switch to high contrast mode/i
+    })
+  ).toBeVisible()
+  const standardGround = await page.evaluate(
+    () => getComputedStyle(document.documentElement).backgroundColor
+  )
+
+  await page
+    .getByRole("button", { name: /switch to high contrast mode/i })
+    .click()
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-contrast",
+    "high-contrast"
+  )
+  await expect(
+    page.getByRole("button", {
+      name: /contrast: high contrast\. switch to dark mode/i
+    })
+  ).toBeVisible()
+  const highContrastGround = await page.evaluate(
+    () => getComputedStyle(document.documentElement).backgroundColor
+  )
+
+  // Each mode paints a distinct ground, so the attribute is not the only proof.
+  expect(new Set([darkGround, standardGround, highContrastGround]).size).toBe(3)
+
+  await page.getByRole("button", { name: /switch to dark mode/i }).click()
+  await expect(page.locator("html")).toHaveAttribute("data-contrast", "dark")
 })
 
 async function joinPlayer(
@@ -161,4 +383,16 @@ async function visibleDollarAmount(
     throw new Error(`Could not read dollar amount from ${text ?? "empty text"}`)
   }
   return Number(match[1])
+}
+
+/**
+ * Assert an element sits inside the 375x667 viewport. `boundingBox()` returns
+ * null for an element that is not rendered, so the null check is the point: a
+ * bounds-only assertion passes vacuously when the control is missing entirely.
+ */
+async function expectWithinViewport(locator: Locator, label: string) {
+  const box = await locator.boundingBox()
+  expect(box, `${label} is rendered`).not.toBeNull()
+  expect(box!.y, `${label} top edge`).toBeGreaterThanOrEqual(0)
+  expect(box!.y + box!.height, `${label} bottom edge`).toBeLessThanOrEqual(667)
 }

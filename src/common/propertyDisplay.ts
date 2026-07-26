@@ -16,6 +16,28 @@ export function propertyAccent(property: Property) {
   return colors[property.colorGroup] ?? "#111827"
 }
 
+/**
+ * The stylesheet keys every band colour, band text colour and high-contrast
+ * fill pattern off `[data-group="…"]`, so the slug is the single contract
+ * between a property and its band styling.
+ */
+export function propertyGroupSlug(property: Property) {
+  if (property.category === "railroad") return "railroad"
+  if (property.category === "utility") return "utility"
+  return property.colorGroup.toLowerCase().replace(/\s+/g, "")
+}
+
+/**
+ * The group name as it is printed on the band. Colour is never the only
+ * channel: the group decides monopolies, so it is spelled out for streets as
+ * well as for railroads and utilities.
+ */
+export function propertyGroupLabel(property: Property) {
+  if (property.category === "railroad") return "Railroad"
+  if (property.category === "utility") return "Utility"
+  return property.colorGroup
+}
+
 export function propertyBandText(property: Property) {
   const accent = propertyAccent(property)
   const darkText = "#111827"

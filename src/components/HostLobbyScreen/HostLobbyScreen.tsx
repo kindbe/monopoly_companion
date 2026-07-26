@@ -1,6 +1,7 @@
 import {
   actionRowClass,
   finePrintClass,
+  joinCodeClass,
   kickerClass,
   panelClass,
   primaryActionClass,
@@ -22,10 +23,7 @@ export function HostLobbyScreen({
       <section className={panelClass}>
         <h2>Host Lobby</h2>
         <p className={kickerClass}>Join code</p>
-        <div
-          className="rounded-md border border-violet-200 bg-surface-raised p-4 text-3xl font-bold tracking-[0.08em] text-accent shadow-md shadow-violet-950/10 dark:border-violet-400/30 dark:shadow-black/25"
-          data-testid="join-code"
-        >
+        <div className={joinCodeClass} data-testid="join-code">
           {joinCode}
         </div>
         <p className={finePrintClass}>
@@ -35,9 +33,12 @@ export function HostLobbyScreen({
       <section className={panelClass}>
         <h2>Players</h2>
         {players.length ? (
-          <ul>
+          <ul className="m-0 grid list-none gap-0 p-0">
             {players.map((player) => (
-              <li key={player.id}>
+              <li
+                className="flex min-h-9 items-center border-0 border-b border-b-[var(--rule-soft)] py-1 text-sm uppercase tracking-[0.06em] last:border-b-0"
+                key={player.id}
+              >
                 {player.name} {player.connected ? "connected" : "disconnected"}
               </li>
             ))}
