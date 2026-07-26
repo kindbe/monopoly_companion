@@ -79,7 +79,9 @@ The related `Remove color group stat` scenario is kept but clarified: what it fo
 - `propertyBandText()` in `src/common/propertyDisplay.ts` already selects band text by measured WCAG ratio and is the correct precedent to generalize. Its output is currently untested for contrast quality.
 - No component-level tests exist today; coverage is carried entirely by domain, server, and session tests, and `src/shared/**` is excluded from coverage. A pure restyle therefore has little effect on the 80% line threshold in either direction.
 
-## Open questions
+## Resolved questions
 
-- Does tablet portrait at 744px genuinely resolve to the phone dock, or does it need a third treatment? Flagged above as needing physical-device validation.
-- In `dark`, is a pure white card uncomfortably bright in a dim room? A warm off-white (approximately `#F2EFE6`) is the fallback if testing says yes.
+Both questions this change opened have been answered. They are kept here rather than deleted, because the reasoning explains why two values look arbitrary in the stylesheet.
+
+- **Does tablet portrait at 744px resolve to the phone dock, or need a third treatment?** The dock, with sizing corrections. An adversarial review rendered 744x1133 and found the first attempt genuinely poor: the deed stranded at phone width in a column nearly twice as wide, the pass control stretched into a full-width hairline strip, and a large band of dead ground below the card. Growing the deed at `sm:`, capping dock controls at 560px, and centring the scroll region with `align-content: safe center` resolved all three, and the breakpoint stands at 1024px. `safe center` is load-bearing: it falls back to start alignment the moment content overflows, so a phone still scrolls from the top of the card rather than from its clipped middle.
+- **Is a pure white card uncomfortably bright in `dark`?** No. Reviewed and accepted, so `--color-surface-card` stays `#ffffff` in every mode. The `#F2EFE6` fallback is not needed and was not applied.
