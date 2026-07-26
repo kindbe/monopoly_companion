@@ -124,7 +124,7 @@ For new features or large modification, my flow typically looked like this:
 
 ### UI Iteration
 
-SDD generally worked well, but there were some challenges around UI polish. "Make it look cool" is not a well-defined requirement. For UI prototyping and refinement, I found superpowers visual companion incredibly helpful in brainstorming designs. Codex in /goal mode did a respectable job of taking a screenshot, instructions around color palette, layout, etc. and improving the UI.
+SDD generally worked well, but there were some challenges around UI polish. "Make it look cool" is not a well-defined requirement. For UI prototyping and refinement, I found superpowers visual companion incredibly helpful in brainstorming designs. Agents in /goal mode did a respectable job of taking a screenshot, instructions around color palette, layout, etc. and improving the UI.
 
 ### Bug Fixes
 
