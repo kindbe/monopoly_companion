@@ -100,4 +100,50 @@ describe("host-authoritative multiplayer session", () => {
       ])
     )
   })
+
+  it("advances early once every still-connected player skips", () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1000)
+    const session = createHostAuthoritativeSession({
+      hostName: "Host",
+      config: { propertyCount: 2, increment: 10, countdownSeconds: 10 },
+      codeGenerator: () => "TABLE1",
+      random: () => 0.1,
+      sendPlayerEvent: () => {}
+    })
+
+    session.handlePeerIntent("joelle-peer", {
+      type: "join-session",
+      joinCode: "TABLE1",
+      name: "Joelle"
+    })
+    session.handlePeerIntent("mara-peer", {
+      type: "join-session",
+      joinCode: "TABLE1",
+      name: "Mara"
+    })
+    session.startBidding(1000)
+    const firstProperty = session.getHostState().currentProperty
+    session.markPeerDisconnected("mara-peer")
+
+    session.handlePeerIntent("host", {
+      type: "skip-property",
+      joinCode: "TABLE1",
+      playerId: session.hostPlayerId
+    })
+    session.handlePeerIntent("joelle-peer", {
+      type: "skip-property",
+      joinCode: "TABLE1",
+      playerId: "player-2"
+    })
+
+    const hostState = session.getHostState()
+    expect(hostState.roundMessage).toBe("Skipped!")
+    expect(hostState.currentProperty).not.toEqual(firstProperty)
+    expect(hostState.completedBids).toEqual([
+      { property: firstProperty, winnerId: null, price: 0 }
+    ])
+
+    vi.useRealTimers()
+  })
 })

@@ -1,52 +1,383 @@
 @import "tailwindcss";
 
-@theme {
-  --color-surface: #f7f4ff;
+/* ==========================================================================
+   LAYER 1 — RAW PALETTE
+   Nothing outside this file may reference these directly; they exist only to
+   be assigned to a semantic role in layer 2 or a mode override in layer 3.
+   ========================================================================== */
+:root {
+  /* neutrals: warm board stock, never blue-grey, never pure white */
+  --cream-050: #fbf7ec;
+  --cream-100: #f3eddf;
+  --cream-200: #e8dfc9;
+  --cream-300: #d8ccae;
+  --ink-900: #14130f;
+  --ink-800: #1e1c16;
+  --ink-600: #45412f;
+  --ink-400: #6b6551;
+
+  /* "back of the board" — deep warm green-black */
+  --board-900: #0e1512;
+  --board-800: #141d18;
+  --board-700: #1b2721;
+  --board-600: #2a3830;
+  --board-ink: #efe7d3;
+  --board-ink-muted: #a9af9c;
+
+  /* card stock is white in every mode, so the ink printed on it is too */
+  --card-ink-900: #111827;
+  --card-ink-500: #4b5563;
+
+  /* authentic property group hues, matching propertyAccent() */
+  --raw-purple: #7e3fa3;
+  --raw-lightblue: #7dd3fc;
+  --raw-pink: #ec4899;
+  --raw-orange: #f97316;
+  --raw-red: #dc2626;
+  --raw-yellow: #facc15;
+  --raw-green: #16a34a;
+  --raw-darkblue: #1d4ed8;
+  --raw-railroad: #1f2937;
+  --raw-utility: #0891b2;
+
+  /* high-contrast ramp: same hue family, luminance pushed until every band
+     clears 7:1 against pure black or pure white band text. Not board-accurate
+     by design — the ratio matters more than the fidelity. */
+  --hc-purple: #4b2a6e;
+  --hc-lightblue: #7dd3fc;
+  --hc-pink: #f978ae;
+  --hc-orange: #f97316;
+  --hc-red: #a50f0f;
+  --hc-yellow: #facc15;
+  --hc-green: #0a5c27;
+  --hc-darkblue: #1a3fb5;
+  --hc-railroad: #14181f;
+  --hc-utility: #075b76;
+}
+
+/* ==========================================================================
+   LAYER 2 — SEMANTIC ROLES
+   The only layer components style against. Declared as Tailwind theme tokens
+   so each role also produces utilities (bg-surface, text-ink, border-rule …).
+   ========================================================================== */
+@theme static {
+  --font-sans:
+    "Josefin Sans Variable", "Futura", "Century Gothic", "Avenir Next",
+    "Trebuchet MS", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sans);
+
+  --color-surface: var(--cream-100);
+  --color-surface-raised: var(--cream-050);
+  --color-surface-card: #ffffff;
+  --color-ink: var(--ink-900);
+  --color-ink-muted: var(--ink-400);
+  --color-rule: var(--ink-900);
+  --color-focus: var(--ink-900);
+
+  /* card ink is its own family: white stock never inherits page ink */
+  --color-card-ink: var(--card-ink-900);
+  --color-card-ink-muted: var(--card-ink-500);
+  --color-card-rule: var(--card-ink-900);
+
+  --color-btn-face: var(--cream-050);
+  --color-btn-ink: var(--ink-900);
+  --color-btn-face-alt: var(--ink-900);
+  --color-btn-ink-alt: var(--cream-050);
+  --color-btn-shadow: var(--ink-900);
+
+  --color-band-ink-dark: #111827;
+  --color-band-ink-light: #ffffff;
+
+  --color-group-purple: var(--raw-purple);
+  --color-group-lightblue: var(--raw-lightblue);
+  --color-group-pink: var(--raw-pink);
+  --color-group-orange: var(--raw-orange);
+  --color-group-red: var(--raw-red);
+  --color-group-yellow: var(--raw-yellow);
+  --color-group-green: var(--raw-green);
+  --color-group-darkblue: var(--raw-darkblue);
+  --color-group-railroad: var(--raw-railroad);
+  --color-group-utility: var(--raw-utility);
+
+  /* one small radius, one hard-offset shadow tier */
+  --radius-card: 3px;
+  --shadow-press: 3px 3px 0 var(--color-btn-shadow);
+}
+
+/* Non-utility roles: measurements and composites that no utility consumes. */
+:root {
+  --rule-weight: 1px;
+  --rule-soft: rgb(20 19 15 / 0.18);
+  --focus-weight: 3px;
+  --btn-offset: 3px;
+  --pattern-opacity: 0; /* group fill patterns are high-contrast only */
+  /* Deliberately NOT a @theme token. Tailwind statically inlines `--shadow-*`
+     theme values into the utility, so a per-mode override would be emitted and
+     then referenced by nothing. Consumed through an arbitrary box-shadow. */
+  --shadow-deed: 6px 6px 0 rgb(20 19 15 / 0.14);
+}
+
+/* ==========================================================================
+   LAYER 3 — PER-MODE OVERRIDES, keyed on [data-contrast]
+   ========================================================================== */
+@custom-variant dark (&:where([data-contrast="dark"], [data-contrast="dark"] *));
+
+[data-contrast="high-contrast"] {
+  --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
-  --color-ink: #0f172a;
-  --color-ink-muted: #475569;
-  --color-accent: #7c3aed;
-  --color-action: #047857;
-  --color-action-hover: #065f46;
-  --color-action-disabled: #e2e8f0;
-  --color-action-disabled-ink: #334155;
-  --color-action-ink: #ffffff;
-  --color-focus: #059669;
+  --color-surface-card: #ffffff;
+  --color-ink: #000000;
+  --color-ink-muted: #232323;
+  --color-rule: #000000;
+  --color-focus: #000000;
+  --color-card-ink: #000000;
+  --color-card-ink-muted: #232323;
+  --color-card-rule: #000000;
+  --color-btn-face: #ffffff;
+  --color-btn-ink: #000000;
+  --color-btn-face-alt: #000000;
+  --color-btn-ink-alt: #ffffff;
+  --color-btn-shadow: #000000;
+  --color-band-ink-dark: #000000;
+  --color-band-ink-light: #ffffff;
+  --color-group-purple: var(--hc-purple);
+  --color-group-lightblue: var(--hc-lightblue);
+  --color-group-pink: var(--hc-pink);
+  --color-group-orange: var(--hc-orange);
+  --color-group-red: var(--hc-red);
+  --color-group-yellow: var(--hc-yellow);
+  --color-group-green: var(--hc-green);
+  --color-group-darkblue: var(--hc-darkblue);
+  --color-group-railroad: var(--hc-railroad);
+  --color-group-utility: var(--hc-utility);
+  --rule-weight: 2px;
+  --rule-soft: #000000;
+  --focus-weight: 4px;
+  --btn-offset: 4px;
+  --pattern-opacity: 1;
+  --shadow-deed: 6px 6px 0 #000000;
 }
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-
-[data-theme="dark"] {
-  --color-surface: #121020;
-  --color-surface-raised: #1a1730;
-  --color-ink: #f5f3ff;
-  --color-ink-muted: #ddd6fe;
-  --color-accent: #c4b5fd;
-  --color-action: #10b981;
-  --color-action-hover: #34d399;
-  --color-action-disabled: #334155;
-  --color-action-disabled-ink: #f1f5f9;
-  --color-action-ink: #07130f;
-  --color-focus: #6ee7b7;
+[data-contrast="dark"] {
+  --color-surface: var(--board-900);
+  --color-surface-raised: var(--board-700);
+  --color-surface-card: #ffffff;
+  --color-ink: var(--board-ink);
+  --color-ink-muted: var(--board-ink-muted);
+  --color-rule: var(--board-ink);
+  --color-focus: var(--board-ink);
+  --color-card-ink: var(--card-ink-900);
+  --color-card-ink-muted: var(--card-ink-500);
+  --color-card-rule: var(--card-ink-900);
+  --color-btn-face: var(--board-700);
+  --color-btn-ink: var(--board-ink);
+  --color-btn-face-alt: var(--board-ink);
+  --color-btn-ink-alt: var(--board-900);
+  --color-btn-shadow: rgb(239 231 211 / 0.7);
+  --rule-soft: rgb(239 231 211 / 0.2);
+  --shadow-deed: 6px 6px 0 rgb(0 0 0 / 0.55);
 }
 
+/* Card ink is scoped to the card and does not inherit page ink. Applying
+   .on-card inside a white card repoints the page ink roles at the card
+   family, so text-ink / border-rule keep meeting contrast on white stock. */
+.on-card {
+  --color-ink: var(--color-card-ink);
+  --color-ink-muted: var(--color-card-ink-muted);
+  --color-rule: var(--color-card-rule);
+  --rule-soft: rgb(17 24 39 / 0.28);
+  /* Focus follows the ink onto the card. The page focus colour is tuned for
+     the page ground and drops to 1.23:1 on white stock in dark mode, so a
+     focusable control inside a card would otherwise have an invisible ring. */
+  --color-focus: var(--color-card-ink);
+  color: var(--color-card-ink);
+}
+
+/* ==========================================================================
+   PROPERTY COLOR BAND
+   A real element with a solid background-color and a real border, never a
+   background-image, so it survives forced-colors. The group name is text.
+   ========================================================================== */
+[data-group="purple"] {
+  --band-bg: var(--color-group-purple);
+  --band-text: var(--color-band-ink-light);
+  --band-pattern: repeating-linear-gradient(
+    45deg,
+    currentColor 0 3px,
+    transparent 3px 11px
+  );
+}
+
+[data-group="lightblue"] {
+  --band-bg: var(--color-group-lightblue);
+  --band-text: var(--color-band-ink-dark);
+  --band-pattern: radial-gradient(currentColor 1.7px, transparent 1.9px);
+  --band-pattern-size: 11px 11px;
+}
+
+[data-group="pink"] {
+  --band-bg: var(--color-group-pink);
+  --band-text: var(--color-band-ink-dark);
+  --band-pattern:
+    repeating-linear-gradient(45deg, currentColor 0 2px, transparent 2px 10px),
+    repeating-linear-gradient(-45deg, currentColor 0 2px, transparent 2px 10px);
+}
+
+[data-group="orange"] {
+  --band-bg: var(--color-group-orange);
+  --band-text: var(--color-band-ink-dark);
+  --band-pattern: repeating-linear-gradient(
+    90deg,
+    currentColor 0 4px,
+    transparent 4px 13px
+  );
+}
+
+[data-group="red"] {
+  --band-bg: var(--color-group-red);
+  --band-text: var(--color-band-ink-light);
+  --band-pattern: repeating-linear-gradient(
+    0deg,
+    currentColor 0 3px,
+    transparent 3px 10px
+  );
+}
+
+[data-group="yellow"] {
+  --band-bg: var(--color-group-yellow);
+  --band-text: var(--color-band-ink-dark);
+  --band-pattern: repeating-linear-gradient(
+    -45deg,
+    currentColor 0 3px,
+    transparent 3px 11px
+  );
+}
+
+[data-group="green"] {
+  --band-bg: var(--color-group-green);
+  --band-text: var(--color-band-ink-dark);
+  --band-pattern: radial-gradient(currentColor 2.4px, transparent 2.6px);
+  --band-pattern-size: 8px 8px;
+}
+
+[data-group="darkblue"] {
+  --band-bg: var(--color-group-darkblue);
+  --band-text: var(--color-band-ink-light);
+  --band-pattern: repeating-linear-gradient(
+    45deg,
+    currentColor 0 7px,
+    transparent 7px 18px
+  );
+}
+
+[data-group="railroad"] {
+  --band-bg: var(--color-group-railroad);
+  --band-text: var(--color-band-ink-light);
+  --band-pattern:
+    repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 8px),
+    repeating-linear-gradient(0deg, currentColor 0 2px, transparent 2px 8px);
+}
+
+[data-group="utility"] {
+  --band-bg: var(--color-group-utility);
+  --band-text: var(--color-band-ink-dark);
+  --band-pattern:
+    repeating-linear-gradient(0deg, currentColor 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 9px);
+}
+
+/* Band ink follows the band fill, and the high-contrast ramp shifts luminance
+   to reach 7:1. Green and utility are the only two groups whose best ink
+   differs between the ramps: their authentic fills (#16a34a, #0891b2) are light
+   enough to need dark ink, while the high-contrast fills (#0a5c27, #075b76) are
+   darkened far enough to need light ink. Every other group picks the same ink
+   in both ramps and is left alone. */
+[data-contrast="high-contrast"] [data-group="green"],
+[data-contrast="high-contrast"] [data-group="utility"] {
+  --band-text: var(--color-band-ink-light);
+}
+
+.deed-band {
+  position: relative;
+  background-color: var(--band-bg);
+  color: var(--band-text);
+  border-bottom: var(--rule-weight) solid var(--color-rule);
+}
+
+.deed-band > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Secondary channel only: patterns disappear under forced colors, so the
+   group name text remains the guarantee. */
+.deed-band::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: var(--pattern-opacity);
+  color: color-mix(in srgb, var(--band-text) 55%, transparent);
+  background-image: var(--band-pattern, none);
+  background-size: var(--band-pattern-size, auto);
+}
+
+/* With the pattern on, the group name sits on a solid plate of the band
+   color so it keeps its full ratio and the pattern reads only around it. */
+[data-contrast="high-contrast"] .deed-band > * {
+  background: var(--band-bg);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
 @layer base {
+  html {
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+
+  body {
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
   h1 {
     font-size: clamp(1.75rem, 4.5vw, 3.25rem);
-    font-weight: 800;
-    line-height: 1.02;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
   h2 {
     font-size: clamp(1.35rem, 2.4vw, 1.75rem);
-    font-weight: 750;
-    line-height: 1.15;
+    font-weight: 700;
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
 
   h3 {
     font-size: 1.125rem;
     font-weight: 700;
     line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  h4,
+  legend,
+  label {
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  :where(button, [tabindex]):focus-visible {
+    outline: var(--focus-weight) solid var(--color-focus);
+    outline-offset: 2px;
   }
 }
 
@@ -81,16 +412,6 @@
   }
 }
 
-@keyframes urgent-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgb(244 63 94 / 0.26);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgb(244 63 94 / 0);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -99,5 +420,18 @@
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* background-image is discarded here, so the band survives only because it is
+   a real element with a real border and the group is spelled out in text. */
+@media (forced-colors: active) {
+  .deed-band {
+    border-bottom: 3px solid CanvasText;
+    forced-color-adjust: none;
+  }
+
+  .deed-band::after {
+    display: none;
   }
 }

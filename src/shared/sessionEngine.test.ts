@@ -233,4 +233,221 @@ describe("shared multiplayer session engine", () => {
       remainingBidCount: 2
     })
   })
+
+  it("advances early when every connected player skips and another player is disconnected", () => {
+    const engine = createSessionEngine({
+      codeGenerator: () => "TABLE1",
+      random: () => 0.1
+    })
+    const host = engine.createSession({
+      hostName: "Host",
+      propertyCount: 2,
+      increment: 10
+    })
+    const joelle = engine.joinSession({
+      joinCode: host.joinCode,
+      name: "Joelle"
+    })
+    const mara = engine.joinSession({ joinCode: host.joinCode, name: "Mara" })
+
+    engine.startBidding({ joinCode: host.joinCode, now: 1_000 })
+    const firstProperty = engine.getHostState(host.joinCode).currentProperty
+    engine.markDisconnected(host.joinCode, mara.playerId)
+
+    engine.skipProperty({
+      joinCode: host.joinCode,
+      playerId: host.playerId,
+      now: 2_000
+    })
+    engine.skipProperty({
+      joinCode: host.joinCode,
+      playerId: joelle.playerId,
+      now: 3_000
+    })
+
+    const hostState = engine.getHostState(host.joinCode)
+    expect(hostState.roundMessage).toBe("Skipped!")
+    expect(hostState.currentProperty).not.toEqual(firstProperty)
+    expect(hostState.completedBids).toEqual([
+      { property: firstProperty, winnerId: null, price: 0 }
+    ])
+  })
+
+  it("advances early when a disconnect completes the all-skipped condition", () => {
+    const engine = createSessionEngine({
+      codeGenerator: () => "TABLE1",
+      random: () => 0.1
+    })
+    const host = engine.createSession({
+      hostName: "Host",
+      propertyCount: 2,
+      increment: 10
+    })
+    const joelle = engine.joinSession({
+      joinCode: host.joinCode,
+      name: "Joelle"
+    })
+    const mara = engine.joinSession({ joinCode: host.joinCode, name: "Mara" })
+
+    engine.startBidding({ joinCode: host.joinCode, now: 1_000 })
+    const firstProperty = engine.getHostState(host.joinCode).currentProperty
+
+    engine.skipProperty({
+      joinCode: host.joinCode,
+      playerId: host.playerId,
+      now: 2_000
+    })
+    engine.skipProperty({
+      joinCode: host.joinCode,
+      playerId: joelle.playerId,
+      now: 3_000
+    })
+    expect(engine.getHostState(host.joinCode).currentProperty).toEqual(
+      firstProperty
+    )
+
+    engine.markDisconnected(host.joinCode, mara.playerId, 4_000)
+
+    const hostState = engine.getHostState(host.joinCode)
+    expect(hostState.roundMessage).toBe("Skipped!")
+    expect(hostState.currentProperty).not.toEqual(firstProperty)
+    expect(hostState.completedBids).toEqual([
+      { property: firstProperty, winnerId: null, price: 0 }
+    ])
+  })
+
+  it("does not advance early when no player is connected", () => {
+    const engine = createSessionEngine({
+      codeGenerator: () => "TABLE1",
+      random: () => 0.1
+    })
+    const host = engine.createSession({
+      hostName: "Host",
+      propertyCount: 2,
+      increment: 10
+    })
+    const joelle = engine.joinSession({
+      joinCode: host.joinCode,
+      name: "Joelle"
+    })
+
+    engine.startBidding({ joinCode: host.joinCode, now: 1_000 })
+    const firstProperty = engine.getHostState(host.joinCode).currentProperty
+    engine.markDisconnected(host.joinCode, host.playerId)
+    engine.markDisconnected(host.joinCode, joelle.playerId)
+
+    engine.skipProperty({
+      joinCode: host.joinCode,
+      playerId: host.playerId,
+      now: 2_000
+    })
+    engine.skipProperty({
+      joinCode: host.joinCode,
+      playerId: joelle.playerId,
+      now: 3_000
+    })
+
+    const hostState = engine.getHostState(host.joinCode)
+    expect(hostState.roundMessage).toBeNull()
+    expect(hostState.currentProperty).toEqual(firstProperty)
+    expect(hostState.completedBids).toEqual([])
+  })
+
+  it("keeps the round open when a bid exists and every connected player then skips", () => {
+    const engine = createSessionEngine({
+      codeGenerator: () => "TABLE1",
+      random: () => 0.1
+    })
+    const host = engine.createSession({
+      hostName: "Host",
+      propertyCount: 2,
+      increment: 10,
+      countdownSeconds: 10
+    })
+    const joelle = engine.joinSession({
+      joinCode: host.joinCode,
+      name: "Joelle"
+    })
+    const mara = engine.joinSession({ joinCode: host.joinCode, name: "Mara" })
+
+    engine.startBidding({ joinCode: host.joinCode, now: 1_000 })
+    const openingBid = engine.getHostState(host.joinCode).currentBid
+    const firstProperty = engine.getHostState(host.joinCode).currentProperty
+
+    engine.raiseBid({
+      joinCode: host.joinCode,
+      playerId: joelle.playerId,
+      increment: 10,
+      now: 2_000
+    })
+    engine.markDisconnected(host.joinCode, joelle.playerId)
+    engine.skipProperty({
+      joinCode: host.joinCode,
+      playerId: host.playerId,
+      now: 3_000
+    })
+    engine.skipProperty({
+      joinCode: host.joinCode,
+      playerId: mara.playerId,
+      now: 4_000
+    })
+
+    const openRoundState = engine.getHostState(host.joinCode)
+    expect(openRoundState.roundMessage).toBeNull()
+    expect(openRoundState.currentProperty).toEqual(firstProperty)
+    expect(openRoundState.completedBids).toEqual([])
+
+    engine.resolveExpiredRounds(11_000)
+
+    const settledState = engine.getHostState(host.joinCode)
+    expect(settledState.completedBids).toEqual([
+      {
+        property: firstProperty,
+        winnerId: joelle.playerId,
+        price: openingBid + 10
+      }
+    ])
+    expect(
+      engine.getPlayerState(host.joinCode, joelle.playerId).player.properties
+    ).toEqual([firstProperty])
+  })
+
+  it("keeps a disconnected winner's property and remaining cash in the roster", () => {
+    const engine = createSessionEngine({
+      codeGenerator: () => "TABLE1",
+      random: () => 0.1
+    })
+    const host = engine.createSession({
+      hostName: "Host",
+      propertyCount: 1,
+      increment: 10,
+      countdownSeconds: 10
+    })
+    const joelle = engine.joinSession({
+      joinCode: host.joinCode,
+      name: "Joelle"
+    })
+
+    engine.startBidding({ joinCode: host.joinCode, now: 1_000 })
+    const openingBid = engine.getHostState(host.joinCode).currentBid
+    const wonProperty = engine.getHostState(host.joinCode).currentProperty
+
+    engine.raiseBid({
+      joinCode: host.joinCode,
+      playerId: joelle.playerId,
+      increment: 10,
+      now: 2_000
+    })
+    engine.markDisconnected(host.joinCode, joelle.playerId)
+    engine.resolveExpiredRounds(11_000)
+
+    const joelleState = engine.getPlayerState(host.joinCode, joelle.playerId)
+    expect(joelleState.player.properties).toEqual([wonProperty])
+    expect(joelleState.player.remainingCash).toBe(1500 - openingBid - 10)
+    expect(engine.getHostState(host.joinCode).players).toContainEqual({
+      id: joelle.playerId,
+      name: "Joelle",
+      connected: false
+    })
+  })
 })

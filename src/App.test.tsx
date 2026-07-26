@@ -9,7 +9,7 @@ describe("App", () => {
   afterEach(() => {
     localStorage.clear()
     vi.restoreAllMocks()
-    document.documentElement.removeAttribute("data-theme")
+    document.documentElement.removeAttribute("data-contrast")
   })
 
   it("starts with a simplified multiplayer landing", () => {
@@ -39,16 +39,21 @@ describe("App", () => {
     expect(screen.queryByText(/\$1500 starting cash/i)).not.toBeInTheDocument()
   })
 
-  it("uses the modern visual treatment on the landing surface", () => {
+  it("uses the title-deed visual treatment on the landing surface", () => {
     render(<App />)
 
     const landing = screen
       .getByRole("heading", { name: /start a property auction/i })
       .closest("section")
 
-    expect(landing).toHaveClass("border-violet-200")
-    expect(landing?.className).not.toContain("bg-[#e4c142]")
-    expect(landing?.className).not.toContain("shadow-[5px_5px_0_#20251d]")
+    // A rule-and-whitespace zone, not a panel: the landing band is separated
+    // by a hairline rule against the semantic token, carries no fill and no
+    // shadow, and introduces no chroma of its own.
+    expect(landing).toHaveClass("border-rule")
+    expect(landing).toHaveClass("[border-top-width:var(--rule-weight)]")
+    expect(landing?.className).not.toMatch(/violet|emerald|rose|slate/)
+    expect(landing?.className).not.toMatch(/\bshadow-/)
+    expect(landing?.className).not.toMatch(/\bbg-/)
   })
 
   it("animates the active screen when moving between app phases", async () => {
@@ -69,32 +74,58 @@ describe("App", () => {
     ).toBeInTheDocument()
   })
 
-  it("defaults theme from prefers-color-scheme and uses a compact icon toggle", async () => {
+  it("defaults contrast from prefers-color-scheme and cycles all three modes", async () => {
     vi.stubGlobal(
       "matchMedia",
-      vi.fn().mockReturnValue({
-        matches: true,
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === "(prefers-color-scheme: dark)",
         addEventListener: vi.fn(),
         removeEventListener: vi.fn()
-      })
+      }))
     )
     const user = userEvent.setup()
 
     render(<App />)
 
-    expect(document.documentElement).toHaveAttribute("data-theme", "dark")
+    expect(document.documentElement).toHaveAttribute("data-contrast", "dark")
 
-    const themeToggle = screen.getByRole("button", {
-      name: /switch to light mode/i
+    const contrastToggle = screen.getByRole("button", {
+      name: /contrast: dark\. switch to standard mode/i
     })
-    expect(themeToggle).toHaveAttribute("title", "Switch to light mode")
-    expect(themeToggle).toHaveClass("min-h-11")
-    expect(themeToggle).toHaveClass("min-w-11")
-    expect(themeToggle).not.toHaveTextContent(/switch/i)
+    expect(contrastToggle).toHaveAttribute(
+      "title",
+      "Contrast: dark. Switch to standard mode"
+    )
+    expect(contrastToggle).toHaveClass("min-h-11")
+    expect(contrastToggle).toHaveClass("min-w-11")
+    expect(contrastToggle).not.toHaveTextContent(/switch/i)
 
-    await user.click(themeToggle)
+    await user.click(contrastToggle)
 
-    expect(document.documentElement).toHaveAttribute("data-theme", "light")
+    expect(document.documentElement).toHaveAttribute(
+      "data-contrast",
+      "standard"
+    )
+    expect(localStorage.getItem("theme")).toBe("standard")
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /contrast: standard\. switch to high contrast mode/i
+      })
+    )
+
+    expect(document.documentElement).toHaveAttribute(
+      "data-contrast",
+      "high-contrast"
+    )
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /contrast: high contrast\. switch to dark mode/i
+      })
+    )
+
+    expect(document.documentElement).toHaveAttribute("data-contrast", "dark")
   })
 
   it("removes redundant player bidding labels and folds starting cash into remaining cash", async () => {
@@ -266,6 +297,142 @@ describe("App", () => {
     ).not.toBeInTheDocument()
   })
 
+  it("moves the host out of the lobby and into the bidding view on player state", async () => {
+    const sockets: FakeSocket[] = []
+    vi.stubGlobal(
+      "WebSocket",
+      class extends FakeSocket {
+        static OPEN = 1
+
+        constructor(url: string) {
+          super(url)
+          sockets.push(this)
+        }
+      }
+    )
+    const propertyById = new Map(
+      MONOPOLY_PROPERTIES.map((property) => [property.id, property])
+    )
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole("button", { name: /host multiplayer/i }))
+    await user.type(screen.getByLabelText(/host name/i), "Host")
+    await user.click(screen.getByRole("button", { name: /create session/i }))
+    act(() => {
+      sockets[0].emit("open")
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "joined",
+          joinCode: "TABLE1",
+          playerId: "player-1"
+        })
+      })
+    })
+
+    expect(
+      screen.getByRole("heading", { name: /host lobby/i })
+    ).toBeInTheDocument()
+
+    act(() => {
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "player-state",
+          state: {
+            role: "player",
+            joinCode: "TABLE1",
+            phase: "bidding",
+            player: {
+              id: "player-1",
+              name: "Host",
+              remainingCash: 1500,
+              properties: []
+            },
+            currentProperty: propertyById.get("boardwalk")!,
+            currentBid: 0,
+            currentBidderName: null,
+            openingBid: 0,
+            remainingPropertyCount: 3,
+            countdownRemaining: 10,
+            remainingBidCount: 3,
+            hasSkipped: false,
+            roundMessage: null
+          }
+        })
+      })
+    })
+
+    expect(
+      screen.queryByRole("heading", { name: /host lobby/i })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId("join-code")).not.toBeInTheDocument()
+    expect(screen.getByText(/your cash: \$1500 \/ \$1500/i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^\+\$10$/i })).toBeEnabled()
+    expect(screen.getByRole("button", { name: /^skip$/i })).toBeEnabled()
+  })
+
+  it("disables the bid and skip controls once the session is complete", async () => {
+    const sockets: FakeSocket[] = []
+    vi.stubGlobal(
+      "WebSocket",
+      class extends FakeSocket {
+        static OPEN = 1
+
+        constructor(url: string) {
+          super(url)
+          sockets.push(this)
+        }
+      }
+    )
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole("button", { name: /join session/i }))
+    await user.type(screen.getByLabelText(/join code/i), "TABLE1")
+    await user.type(screen.getByLabelText(/player name/i), "Joelle")
+    await user.click(screen.getByRole("button", { name: /^join$/i }))
+    act(() => {
+      sockets[0].emit("open")
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "joined",
+          joinCode: "TABLE1",
+          playerId: "player-1"
+        })
+      })
+      sockets[0].emit("message", {
+        data: JSON.stringify({
+          type: "player-state",
+          state: {
+            role: "player",
+            joinCode: "TABLE1",
+            phase: "complete",
+            player: {
+              id: "player-1",
+              name: "Joelle",
+              remainingCash: 920,
+              properties: []
+            },
+            currentProperty: null,
+            currentBid: 0,
+            currentBidderName: null,
+            openingBid: 0,
+            remainingPropertyCount: 0,
+            countdownRemaining: 0,
+            remainingBidCount: 3,
+            hasSkipped: false,
+            roundMessage: null
+          }
+        })
+      })
+    })
+
+    for (const button of screen.getAllByRole("button", { name: /^\+\$/i })) {
+      expect(button).toBeDisabled()
+    }
+    expect(screen.getByRole("button", { name: /^skip$/i })).toBeDisabled()
+  })
+
   it("requires a join code and name for player join", async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -313,13 +480,39 @@ describe("App", () => {
     const quickBidGrid = screen.getByTestId("player-quick-bids")
     const skipButton = screen.getByRole("button", { name: /^skip$/i })
 
-    expect(quickBidGrid).toHaveClass("grid-cols-2")
+    // The dock runs the four quick bids across a single row on phones and
+    // folds them to a 2x2 grid once the rail layout takes over at 1024px.
+    expect(quickBidGrid).toHaveClass("grid-cols-4")
+    expect(quickBidGrid).toHaveClass("lg:grid-cols-2")
     expect(quickBidGrid).toHaveClass("[&>button]:min-w-0")
     expect(skipButton).toHaveClass("min-w-0")
     for (const button of screen.getAllByRole("button", { name: /^\+\$/i })) {
       expect(button).toHaveClass("min-w-0")
       expect(button).toHaveClass("px-2")
     }
+  })
+
+  it("keeps pass quieter than the quick bids while staying a 44px target", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole("button", { name: /join session/i }))
+    await user.type(screen.getByLabelText(/join code/i), "TABLE1")
+    await user.type(screen.getByLabelText(/player name/i), "Joelle")
+    await user.click(screen.getByRole("button", { name: /^join$/i }))
+
+    const passButton = screen.getByRole("button", { name: /^skip$/i })
+    const quickBid = screen.getAllByRole("button", { name: /^\+\$/i })[0]
+
+    // Pass carries no fill and no offset shadow, and never thickens its rule,
+    // while every quick bid carries all three.
+    expect(passButton.className).not.toMatch(/\bbg-btn-face\b/)
+    expect(passButton.className).not.toContain("box-shadow:var(--btn-offset)")
+    expect(passButton.className).not.toContain("var(--rule-weight)")
+    expect(passButton).toHaveClass("min-h-11")
+    expect(quickBid).toHaveClass("bg-btn-face")
+    expect(quickBid.className).toContain("box-shadow:var(--btn-offset)")
+    expect(quickBid).toHaveClass("min-h-14")
   })
 
   it("renders clickable won mini property cards that open the full card", async () => {
@@ -388,11 +581,27 @@ describe("App", () => {
 
     expect(miniCards).toHaveLength(3)
     for (const card of miniCards) {
-      expect(card).toHaveStyle({ backgroundColor: "rgb(255, 255, 255)" })
-      expect(card.style.backgroundImage).toContain("linear-gradient")
-      expect(card.style.getPropertyValue("--property-color")).toMatch(/^#/)
-      expect(card.style.getPropertyValue("--property-band-text")).toMatch(/^#/)
+      // The band is a real bordered element keyed on the group slug, not an
+      // inline background-image gradient: background images are discarded
+      // under forced colors, and the group must survive as text.
+      expect(card.dataset.group).toMatch(/^[a-z]+$/)
+      expect(card.style.backgroundImage).toBe("")
+      expect(card).toHaveClass("bg-surface-card")
+
+      const band = card.querySelector(".deed-band")
+      expect(band).not.toBeNull()
+      expect(band?.textContent?.trim()).toBeTruthy()
     }
+
+    // Every group is named in text on its own chip, for streets too.
+    expect(miniCards.map((card) => card.dataset.group)).toEqual([
+      "purple",
+      "orange",
+      "darkblue"
+    ])
+    expect(
+      miniCards.map((card) => card.querySelector(".deed-band")?.textContent)
+    ).toEqual(["Purple", "Orange", "Dark Blue"])
 
     await user.click(screen.getByRole("button", { name: /view boardwalk/i }))
 
