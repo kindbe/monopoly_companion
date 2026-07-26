@@ -70,9 +70,15 @@ Once all players have joined, the host can click "Start multiplayer bidding" fro
 
 ![Player Bidding](docs/images/player_bidding.png)
 
-As players win properties, they accumulate under the "Properties won" section.  Players can click on won properties to see additional details:
+As players win properties, they accumulate under the "Your properties" section, grouped by color group so you can see which monopolies you are close to completing.  Players can click on won properties to see additional details:
 
 ![Property Details Overlay](docs/images/owned_property_overlay.png)
+
+### Contrast Modes
+
+The screenshots above are the standard theme.  A single control in the corner cycles three contrast modes: standard, high contrast, and dark.
+
+High contrast targets a 7:1 text ratio rather than the usual 4.5:1, and additionally gives every property color group a distinct fill pattern on its band.  That matters because the color group determines which monopolies a player can complete, so it is strategic information rather than decoration and cannot be carried by hue alone.  Reaching 7:1 means the high contrast palette deliberately departs from the authentic board colors.
 
 <details>
 <summary>Dark mode screenshots</summary>
@@ -83,6 +89,18 @@ As players win properties, they accumulate under the "Properties won" section.  
 ![Dark session join](docs/images/session_join_dark.png)
 ![Dark player bidding](docs/images/player_bidding_dark.png)
 ![Dark property details overlay](docs/images/owned_property_overlay_dark.png)
+
+</details>
+
+<details>
+<summary>High contrast screenshots</summary>
+
+![High contrast landing screen](docs/images/landing_screen_high_contrast.png)
+![High contrast auction setup](docs/images/host_setup_high_contrast.png)
+![High contrast host lobby](docs/images/host_lobby_high_contrast.png)
+![High contrast session join](docs/images/session_join_high_contrast.png)
+![High contrast player bidding](docs/images/player_bidding_high_contrast.png)
+![High contrast property details overlay](docs/images/owned_property_overlay_high_contrast.png)
 
 </details>
 
