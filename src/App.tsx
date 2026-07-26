@@ -1,13 +1,14 @@
 import { Contrast, Moon, Sun } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { buildEligiblePropertyPool, type Property } from "@/domain/bidding"
-import type { ContrastMode, Phase } from "@/common/auctionTypes"
+import type { Phase } from "@/common/auctionTypes"
 import {
   CONTRAST_MODE_STORAGE_KEY,
   contrastModeLabel,
   nextContrastMode,
   persistContrastMode,
-  resolveInitialContrastMode
+  resolveInitialContrastMode,
+  type ContrastMode
 } from "@/common/contrastMode"
 import { cx } from "@/common/classNames"
 import {

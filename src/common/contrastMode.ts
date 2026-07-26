@@ -1,4 +1,6 @@
-import type { ContrastMode } from "@/common/auctionTypes"
+/** The user-selectable contrast modes. Owned here, alongside every operation
+ *  on them, rather than in a shared type grab-bag. */
+export type ContrastMode = "standard" | "high-contrast" | "dark"
 
 export const CONTRAST_MODE_STORAGE_KEY = "theme"
 
